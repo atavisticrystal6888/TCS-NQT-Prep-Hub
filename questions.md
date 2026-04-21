@@ -1994,3 +1994,178 @@ A chocolate factory packs chocolates into packets. 0 = empty packet. Move all em
 count=0. For each non-zero element, arr[count]=element, count++. Fill arr[count:] with 0s.
 
 ---
+## Q73. Matrix Reverse Diagonal Consistency 
+
+**Problem**  
+You are given a matrix of size M × N.
+
+Each group of elements that lie on the same diagonal from top-right to bottom-left is considered a diagonal group.
+
+These diagonals are formed using:  
+**i − j = constant**
+
+Check whether all elements in every diagonal group are equal.
+
+- If YES → return sum of first row  
+- If NO → return product of first row  
+
+---
+
+**Sample Input**
+
+```text
+3 3
+6 4 2
+7 2 1
+2 5 3
+```
+
+**Sample Output**
+
+```text
+48
+```
+
+**Explanation**  
+Diagonal [6,2,5] is not equal → condition fails  
+First row = [6,4,2] → product = 48  
+
+---
+
+**Hint**  
+Use a HashMap where key = (i − j) and value = first element of that diagonal.  
+Compare remaining elements in same diagonal.
+
+---
+
+```java
+import java.util.*;
+class Main{
+public static void main(String[] args){
+Scanner sc=new Scanner(System.in);
+int m=sc.nextInt();
+int n=sc.nextInt();
+
+int[][] mat=new int[m][n];
+for(int i=0;i<m;i++){
+for(int j=0;j<n;j++){
+mat[i][j]=sc.nextInt();
+}
+}
+
+boolean flag=true;
+HashMap<Integer,Integer> map=new HashMap<>();
+
+for(int i=0;i<m;i++){
+for(int j=0;j<n;j++){
+int key=i-j;
+if(!map.containsKey(key)){
+map.put(key,mat[i][j]);
+}else{
+if(map.get(key)!=mat[i][j]){
+flag=false;
+}
+}
+}
+}
+
+int result=1;
+
+if(flag){
+result=0;
+for(int j=0;j<n;j++){
+result+=mat[0][j];
+}
+}else{
+for(int j=0;j<n;j++){
+result*=mat[0][j];
+}
+}
+
+System.out.println(result);
+}
+}
+```
+
+---
+
+## Q74. Stock Availability Score
+
+**Problem**  
+You are given stock IDs and their quantities, along with a list of queries.
+
+Calculate a score based on availability:
+
+- qty = 2 → +3  
+- qty = 1 → +2  
+- qty = 0 → −2  
+- not present → −6  
+
+---
+
+**Sample Input**
+
+```text
+3
+101 2
+102 1
+103 0
+4
+101 102 999 103
+```
+
+**Sample Output**
+
+```text
+-3
+```
+
+**Explanation**  
+101 → +3  
+102 → +2  
+999 → −6  
+103 → −2  
+Total = −3  
+
+---
+
+**Hint**  
+Use HashMap<StockID, Quantity> for fast lookup.
+
+---
+
+```java
+import java.util.*;
+class Main{
+public static void main(String[] args){
+Scanner sc=new Scanner(System.in);
+
+int n=sc.nextInt();
+HashMap<Integer,Integer> map=new HashMap<>();
+
+for(int i=0;i<n;i++){
+int id=sc.nextInt();
+int qty=sc.nextInt();
+map.put(id,qty);
+}
+
+int q=sc.nextInt();
+int score=0;
+
+for(int i=0;i<q;i++){
+int id=sc.nextInt();
+
+if(map.containsKey(id)){
+int qty=map.get(id);
+if(qty==2) score+=3;
+else if(qty==1) score+=2;
+else if(qty==0) score-=2;
+}else{
+score-=6;
+}
+}
+
+System.out.println(score);
+}
+}
+```
