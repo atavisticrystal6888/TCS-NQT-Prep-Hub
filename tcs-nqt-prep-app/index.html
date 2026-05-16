@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TCS NQT Prep Hub — All-in-One Preparation</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4361ee">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -48,6 +51,15 @@
             <li data-page="bookmarks">
                 <i class="fas fa-bookmark"></i><span>Bookmarks</span>
             </li>
+            <li data-page="formulas">
+                <i class="fas fa-superscript"></i><span>Formula Sheet</span>
+            </li>
+            <li data-page="analytics">
+                <i class="fas fa-chart-pie"></i><span>Analytics</span>
+            </li>
+            <li data-page="schedule">
+                <i class="fas fa-calendar-alt"></i><span>Study Plan</span>
+            </li>
         </ul>
         <div class="sidebar-footer">
             <div class="exam-countdown" id="examCountdown">
@@ -68,6 +80,21 @@
                 <h2 id="pageTitle">Dashboard</h2>
             </div>
             <div class="top-bar-right">
+                <div class="search-container" id="searchContainer">
+                    <button class="search-trigger" onclick="toggleSearch()" title="Search (Ctrl+K)">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <div class="search-overlay" id="searchOverlay" style="display:none;">
+                        <div class="search-box">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="globalSearchInput" placeholder="Search questions, flashcards, topics..." autocomplete="off" oninput="performSearch(this.value)">
+                                <kbd>Esc</kbd>
+                            </div>
+                            <div class="search-results" id="searchResults"></div>
+                        </div>
+                    </div>
+                </div>
                 <div class="pomodoro-mini" id="pomodoroMini" onclick="navigateTo('notes')" title="Study Timer">
                     <i class="fas fa-stopwatch"></i>
                     <span id="pomodoroMiniDisplay">25:00</span>
@@ -282,7 +309,9 @@
                 <div class="results-topic-breakdown" id="topicBreakdown"></div>
                 <div class="results-actions">
                     <button class="btn btn-primary" onclick="reviewQuiz()"><i class="fas fa-search"></i> Review Answers</button>
+                    <button class="btn btn-warning" onclick="reviewWrongOnly()"><i class="fas fa-exclamation-triangle"></i> Wrong Only</button>
                     <button class="btn btn-secondary" onclick="retakeQuiz()"><i class="fas fa-redo"></i> Retake Test</button>
+                    <button class="btn btn-success" onclick="startWeakAreaQuiz()"><i class="fas fa-crosshairs"></i> Weak Area Quiz</button>
                     <button class="btn btn-outline" onclick="showQuizSetup()"><i class="fas fa-cog"></i> New Test</button>
                 </div>
                 <div id="reviewSection" class="review-section" style="display:none;"></div>
@@ -419,6 +448,36 @@
                     <button class="btn btn-sm btn-warning" onclick="markFlashcard('medium')"><i class="fas fa-minus"></i> Okay</button>
                     <button class="btn btn-sm btn-success" onclick="markFlashcard('easy')"><i class="fas fa-check"></i> Easy</button>
                 </div>
+            </div>
+            <div class="fc-extras">
+                <div class="fc-mode-toggle">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="spacedRepToggle" onchange="toggleSpacedRepetition()">
+                        <span class="toggle-slider"></span>
+                        <span>Spaced Repetition Mode</span>
+                    </label>
+                    <span class="fc-mode-info" title="Cards you marked 'Hard' will appear more frequently. 'Easy' cards appear less often.">ℹ️</span>
+                </div>
+                <div class="fc-stats" id="fcStats"></div>
+            </div>
+            <!-- Custom Flashcard Creation -->
+            <div class="card glass-card fc-custom-card">
+                <h3><i class="fas fa-plus-circle"></i> Create Custom Flashcard</h3>
+                <div class="fc-custom-form">
+                    <select id="customFcTopic">
+                        <option value="quantitative">🔢 Quantitative</option>
+                        <option value="programming">💻 Programming</option>
+                        <option value="dbms">🗃️ DBMS</option>
+                        <option value="os">⚙️ OS</option>
+                        <option value="networks">🌐 Networks</option>
+                        <option value="tcs">🏢 TCS</option>
+                        <option value="custom">✏️ Custom</option>
+                    </select>
+                    <input type="text" id="customFcFront" placeholder="Front (question/term)..." class="fc-input">
+                    <textarea id="customFcBack" placeholder="Back (answer/explanation)..." rows="3" class="fc-input"></textarea>
+                    <button class="btn btn-primary btn-sm" onclick="addCustomFlashcard()"><i class="fas fa-plus"></i> Add Card</button>
+                </div>
+                <div id="customFcList" class="custom-fc-list"></div>
             </div>
         </section>
 
@@ -850,6 +909,13 @@
                 </div>
             </div>
             <div class="progress-actions">
+                <button class="btn btn-primary" onclick="exportProgress()">
+                    <i class="fas fa-download"></i> Export Progress
+                </button>
+                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">
+                    <i class="fas fa-upload"></i> Import Progress
+                </button>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importProgress(event)">
                 <button class="btn btn-danger" onclick="confirmResetProgress()">
                     <i class="fas fa-trash"></i> Reset All Progress
                 </button>
@@ -976,6 +1042,97 @@
                     <i class="fas fa-trash"></i> Clear All Bookmarks
                 </button>
             </div>
+        </section>
+
+        <!-- Formula Quick-Reference Page -->
+        <section id="page-formulas" class="page">
+            <h2><i class="fas fa-superscript"></i> Formula Quick-Reference Sheet</h2>
+            <p class="page-desc">All essential formulas organized by topic. Print this page for offline revision!</p>
+            <div class="formula-actions">
+                <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print Sheet</button>
+                <select id="formulaTopicFilter" onchange="renderFormulaSheet()">
+                    <option value="all">All Topics</option>
+                    <option value="arithmetic">Arithmetic & Numbers</option>
+                    <option value="algebra">Algebra & Equations</option>
+                    <option value="geometry">Geometry & Mensuration</option>
+                    <option value="combinatorics">P&C and Probability</option>
+                    <option value="time">Time, Speed & Work</option>
+                    <option value="commercial">Profit, Interest & Percentage</option>
+                    <option value="logic">Logic & Series</option>
+                    <option value="cs">CS Fundamentals</option>
+                </select>
+            </div>
+            <div id="formulaSheetContent" class="formula-sheet-grid"></div>
+        </section>
+
+        <!-- Analytics Page -->
+        <section id="page-analytics" class="page">
+            <h2><i class="fas fa-chart-pie"></i> Analytics & Insights</h2>
+            <div class="analytics-grid">
+                <div class="card glass-card analytics-card">
+                    <h3><i class="fas fa-chart-area"></i> Accuracy Trend</h3>
+                    <div class="chart-canvas" id="accuracyChart"></div>
+                </div>
+                <div class="card glass-card analytics-card">
+                    <h3><i class="fas fa-bullseye"></i> Topic Radar</h3>
+                    <div class="chart-canvas" id="radarChart"></div>
+                </div>
+                <div class="card glass-card analytics-card">
+                    <h3><i class="fas fa-fire-alt"></i> Activity Heatmap</h3>
+                    <p class="chart-subtitle">Last 12 weeks of study activity</p>
+                    <div class="heatmap-container" id="activityHeatmap"></div>
+                    <div class="heatmap-legend">
+                        <span>Less</span>
+                        <div class="heatmap-cell" style="background:var(--bg-secondary);"></div>
+                        <div class="heatmap-cell" style="background:#d1fae5;"></div>
+                        <div class="heatmap-cell" style="background:#6ee7b7;"></div>
+                        <div class="heatmap-cell" style="background:#10b981;"></div>
+                        <div class="heatmap-cell" style="background:#065f46;"></div>
+                        <span>More</span>
+                    </div>
+                </div>
+                <div class="card glass-card analytics-card">
+                    <h3><i class="fas fa-trophy"></i> Achievements & Insights</h3>
+                    <div id="achievementsList" class="achievements-grid"></div>
+                </div>
+                <div class="card glass-card analytics-card span-2">
+                    <h3><i class="fas fa-clock"></i> Time Distribution</h3>
+                    <div class="chart-canvas" id="timeChart"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Revision Schedule Page -->
+        <section id="page-schedule" class="page">
+            <h2><i class="fas fa-calendar-alt"></i> Revision Schedule Generator</h2>
+            <div class="schedule-setup card glass-card">
+                <h3><i class="fas fa-cog"></i> Configure Your Plan</h3>
+                <div class="schedule-form">
+                    <div class="form-group">
+                        <label>Exam Date:</label>
+                        <input type="date" id="examDateInput" onchange="generateSchedule()">
+                    </div>
+                    <div class="form-group">
+                        <label>Hours per day:</label>
+                        <input type="number" id="hoursPerDay" value="4" min="1" max="12" onchange="generateSchedule()">
+                    </div>
+                    <div class="form-group">
+                        <label>Priority Topics (select weak areas):</label>
+                        <div class="schedule-topics" id="scheduleTopics">
+                            <label><input type="checkbox" value="quantitative" checked> 🔢 Quantitative</label>
+                            <label><input type="checkbox" value="logical" checked> 🧩 Reasoning</label>
+                            <label><input type="checkbox" value="verbal" checked> 📝 Verbal</label>
+                            <label><input type="checkbox" value="programming" checked> 💻 Programming</label>
+                            <label><input type="checkbox" value="dbms"> 🗃️ DBMS</label>
+                            <label><input type="checkbox" value="networking"> 🌐 Networks</label>
+                            <label><input type="checkbox" value="os"> ⚙️ OS</label>
+                            <label><input type="checkbox" value="dsa"> 🧮 DSA</label>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="generateSchedule()"><i class="fas fa-magic"></i> Generate Schedule</button>
+                </div>
+            </div>
+            <div id="scheduleOutput" class="schedule-output"></div>
         </section>
     </main>
 

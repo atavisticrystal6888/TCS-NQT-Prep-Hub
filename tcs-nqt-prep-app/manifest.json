@@ -1,0 +1,22 @@
+{
+  "name": "TCS NQT Prep Hub",
+  "short_name": "NQT Prep",
+  "description": "All-in-One TCS NQT Exam Preparation App",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4361ee",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

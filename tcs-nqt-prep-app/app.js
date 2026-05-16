@@ -74,6 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollToTop();
     renderNotesList();
     renderBookmarksList();
+    renderCustomFcList();
+    updateFcStats();
 });
 
 // ===== NAVIGATION =====
@@ -102,7 +104,10 @@ function navigateTo(page) {
         resources: 'Resources & Tips',
         progress: 'My Progress',
         notes: 'Notes & Timer',
-        bookmarks: 'Bookmarks'
+        bookmarks: 'Bookmarks',
+        formulas: 'Formula Sheet',
+        analytics: 'Analytics',
+        schedule: 'Study Plan'
     }[page] || 'Dashboard';
 
     // Close sidebar on mobile
@@ -1712,3 +1717,891 @@ const qTextEl = document.getElementById('questionText');
 if (qTextEl) {
     new MutationObserver(() => updateBookmarkIcon()).observe(qTextEl, { childList: true, characterData: true, subtree: true });
 }
+
+// ===== PWA SERVICE WORKER REGISTRATION =====
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+}
+
+// ===== GLOBAL SEARCH =====
+function toggleSearch() {
+    const overlay = document.getElementById('searchOverlay');
+    if (overlay.style.display === 'none') {
+        overlay.style.display = 'flex';
+        document.getElementById('globalSearchInput').focus();
+    } else {
+        closeSearch();
+    }
+}
+
+function closeSearch() {
+    document.getElementById('searchOverlay').style.display = 'none';
+    document.getElementById('globalSearchInput').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+}
+
+function performSearch(query) {
+    const results = document.getElementById('searchResults');
+    if (!query || query.length < 2) { results.innerHTML = ''; return; }
+
+    const q = query.toLowerCase();
+    const matches = [];
+
+    // Search questions
+    QUESTION_BANK.forEach(item => {
+        if (item.question.toLowerCase().includes(q) || item.options.some(o => o.toLowerCase().includes(q))) {
+            matches.push({ type: 'question', icon: '❓', text: item.question, topic: TOPIC_META[item.topic]?.name || item.topic, id: item.id });
+        }
+    });
+
+    // Search flashcards
+    FLASHCARD_DATA.forEach((fc, i) => {
+        if (fc.front.toLowerCase().includes(q) || fc.back.toLowerCase().includes(q)) {
+            matches.push({ type: 'flashcard', icon: '🃏', text: fc.front, topic: fc.topic, idx: i });
+        }
+    });
+
+    // Search study materials
+    if (typeof STUDY_MATERIALS !== 'undefined') {
+        for (const [key, mat] of Object.entries(STUDY_MATERIALS)) {
+            if (mat.title.toLowerCase().includes(q)) {
+                matches.push({ type: 'study', icon: '📖', text: mat.title, topic: key, action: `openStudyTopic('${key}')` });
+            }
+            mat.sections?.forEach(s => {
+                if (s.heading.toLowerCase().includes(q)) {
+                    matches.push({ type: 'study', icon: '📖', text: `${mat.title} → ${s.heading}`, topic: key, action: `openStudyTopic('${key}')` });
+                }
+            });
+        }
+    }
+
+    // Search custom flashcards
+    const customCards = JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]');
+    customCards.forEach((fc, i) => {
+        if (fc.front.toLowerCase().includes(q) || fc.back.toLowerCase().includes(q)) {
+            matches.push({ type: 'flashcard', icon: '✏️', text: fc.front, topic: 'Custom' });
+        }
+    });
+
+    // Render results (max 20)
+    const shown = matches.slice(0, 20);
+    if (shown.length === 0) {
+        results.innerHTML = '<div class="search-empty">No results found for "' + escapeHtml(query) + '"</div>';
+        return;
+    }
+
+    results.innerHTML = shown.map(m => `
+        <div class="search-result-item" onclick="${m.type === 'study' ? m.action : m.type === 'question' ? `closeSearch();navigateTo('quiz')` : `closeSearch();navigateTo('flashcards')`}">
+            <span class="sr-icon">${m.icon}</span>
+            <div class="sr-text">
+                <span class="sr-title">${highlightMatch(escapeHtml(m.text.substring(0, 100)), query)}</span>
+                <span class="sr-meta">${m.topic}</span>
+            </div>
+        </div>
+    `).join('') + (matches.length > 20 ? `<div class="search-more">...and ${matches.length - 20} more results</div>` : '');
+}
+
+function highlightMatch(text, query) {
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+}
+
+// Ctrl+K to open search
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleSearch();
+    }
+    if (e.key === 'Escape' && document.getElementById('searchOverlay').style.display !== 'none') {
+        closeSearch();
+    }
+});
+
+// ===== SPACED REPETITION =====
+let spacedRepMode = false;
+
+function toggleSpacedRepetition() {
+    spacedRepMode = document.getElementById('spacedRepToggle').checked;
+    loadFlashcards();
+    updateFcStats();
+}
+
+function getSpacedRepCards(cards) {
+    const progress = state.progress.flashcardProgress || {};
+    // Weight: hard=5x, medium=3x, easy=1x, unseen=2x
+    const weighted = [];
+    cards.forEach(card => {
+        const diff = progress[card.front];
+        let weight = 2; // unseen
+        if (diff === 'hard') weight = 5;
+        else if (diff === 'medium') weight = 3;
+        else if (diff === 'easy') weight = 1;
+        for (let i = 0; i < weight; i++) weighted.push(card);
+    });
+    return shuffleArray(weighted).filter((card, idx, arr) => arr.indexOf(card) === idx);
+}
+
+function updateFcStats() {
+    const el = document.getElementById('fcStats');
+    if (!el) return;
+    const progress = state.progress.flashcardProgress || {};
+    const total = FLASHCARD_DATA.length;
+    const hard = Object.values(progress).filter(v => v === 'hard').length;
+    const medium = Object.values(progress).filter(v => v === 'medium').length;
+    const easy = Object.values(progress).filter(v => v === 'easy').length;
+    const unseen = total - hard - medium - easy;
+    el.innerHTML = `<span class="fc-stat hard">${hard} Hard</span><span class="fc-stat med">${medium} Okay</span><span class="fc-stat easy">${easy} Easy</span><span class="fc-stat unseen">${unseen} Unseen</span>`;
+}
+
+// Patch loadFlashcards to support spaced rep
+const _origLoadFlashcards = loadFlashcards;
+loadFlashcards = function() {
+    const topic = document.getElementById('fcTopicSelect').value;
+    let cards = topic === 'all' ? [...FLASHCARD_DATA] : FLASHCARD_DATA.filter(fc => fc.topic === topic);
+
+    // Add custom flashcards
+    const customCards = JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]');
+    if (topic === 'all') {
+        cards = cards.concat(customCards);
+    } else {
+        cards = cards.concat(customCards.filter(c => c.topic === topic));
+    }
+
+    if (spacedRepMode) {
+        cards = getSpacedRepCards(cards);
+    } else {
+        cards = shuffleArray(cards);
+    }
+
+    state.flashcard.cards = cards;
+    state.flashcard.currentIndex = 0;
+    state.flashcard.flipped = false;
+    renderFlashcard();
+    updateFcStats();
+};
+
+// ===== CUSTOM FLASHCARDS =====
+function addCustomFlashcard() {
+    const front = document.getElementById('customFcFront').value.trim();
+    const back = document.getElementById('customFcBack').value.trim();
+    const topic = document.getElementById('customFcTopic').value;
+
+    if (!front || !back) { alert('Please fill in both front and back of the card.'); return; }
+
+    const customCards = JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]');
+    customCards.push({ front, back, topic, id: Date.now() });
+    localStorage.setItem('tcsNqtCustomFlashcards', JSON.stringify(customCards));
+
+    document.getElementById('customFcFront').value = '';
+    document.getElementById('customFcBack').value = '';
+
+    renderCustomFcList();
+    loadFlashcards(); // Refresh deck with new card
+}
+
+function renderCustomFcList() {
+    const el = document.getElementById('customFcList');
+    if (!el) return;
+    const cards = JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]');
+    if (cards.length === 0) { el.innerHTML = ''; return; }
+    el.innerHTML = `<p style="font-size:0.85rem;color:var(--text-secondary);margin:0.5rem 0;">Your custom cards (${cards.length}):</p>` +
+        cards.slice(-5).reverse().map(c => `
+        <div class="custom-fc-item">
+            <span>${escapeHtml(c.front.substring(0, 40))}${c.front.length > 40 ? '...' : ''}</span>
+            <button class="btn-icon" onclick="deleteCustomFc(${c.id})"><i class="fas fa-trash"></i></button>
+        </div>
+    `).join('');
+}
+
+function deleteCustomFc(id) {
+    let cards = JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]');
+    cards = cards.filter(c => c.id !== id);
+    localStorage.setItem('tcsNqtCustomFlashcards', JSON.stringify(cards));
+    renderCustomFcList();
+    loadFlashcards();
+}
+
+// ===== EXPORT / IMPORT PROGRESS =====
+function exportProgress() {
+    const data = {
+        progress: state.progress,
+        customFlashcards: JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]'),
+        theme: localStorage.getItem('tcsNqtTheme'),
+        exportDate: new Date().toISOString(),
+        version: '2.0'
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nqt-prep-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importProgress(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.progress || !data.version) {
+                alert('Invalid backup file format.');
+                return;
+            }
+            if (!confirm('This will replace your current progress. Continue?')) return;
+
+            state.progress = data.progress;
+            saveProgress();
+
+            if (data.customFlashcards) {
+                localStorage.setItem('tcsNqtCustomFlashcards', JSON.stringify(data.customFlashcards));
+            }
+            if (data.theme) {
+                localStorage.setItem('tcsNqtTheme', data.theme);
+            }
+
+            alert('Progress imported successfully! Refreshing...');
+            location.reload();
+        } catch (err) {
+            alert('Error reading file: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ===== WEAK AREA AUTO-QUIZ =====
+function startWeakAreaQuiz() {
+    const weakTopics = [];
+    for (const [key, meta] of Object.entries(TOPIC_META)) {
+        const stats = state.progress.topicStats[key] || { attempted: 0, correct: 0 };
+        if (stats.attempted > 0) {
+            const pct = Math.round((stats.correct / stats.attempted) * 100);
+            if (pct < 70) weakTopics.push(key);
+        } else {
+            weakTopics.push(key); // Untested topics are also weak
+        }
+    }
+
+    if (weakTopics.length === 0) {
+        alert('Great job! No weak areas found. All topics are above 70%. Try a full mock test instead.');
+        return;
+    }
+
+    let pool = QUESTION_BANK.filter(q => weakTopics.includes(q.topic));
+    pool = shuffleArray(pool).slice(0, 25);
+
+    if (pool.length === 0) { alert('No questions available.'); return; }
+
+    navigateTo('quiz');
+    state.quiz = {
+        questions: pool,
+        currentIndex: 0,
+        answers: {},
+        startTime: Date.now(),
+        timeLimit: 0,
+        timerInterval: null,
+        submitted: false,
+        instantFeedback: true
+    };
+
+    document.getElementById('quizSetup').style.display = 'none';
+    document.getElementById('quizActive').style.display = 'block';
+    document.getElementById('quizResults').style.display = 'none';
+    document.getElementById('qTotal').textContent = pool.length;
+    renderQuestion();
+    renderNavigator();
+}
+
+// ===== QUIZ REVIEW MODE (WRONG ONLY) =====
+function reviewWrongOnly() {
+    const section = document.getElementById('reviewSection');
+    section.style.display = 'block';
+
+    const wrongQs = state.quiz.questions.filter(q => {
+        const answer = state.quiz.answers[q.id];
+        return answer !== undefined && answer !== q.answer;
+    });
+
+    if (wrongQs.length === 0) {
+        section.innerHTML = '<div class="card"><h3>🎉 Perfect Score!</h3><p>You got all questions correct!</p></div>';
+        section.scrollIntoView({ behavior: 'smooth' });
+        return;
+    }
+
+    const letters = ['A', 'B', 'C', 'D'];
+    let html = `<h3>❌ Wrong Answers (${wrongQs.length})</h3><p style="color:var(--text-secondary);margin-bottom:1rem;">Focus on understanding these before your next attempt.</p>`;
+
+    wrongQs.forEach((q, i) => {
+        const answer = state.quiz.answers[q.id];
+        html += `
+            <div class="review-item wrong">
+                <div class="review-meta">${TOPIC_META[q.topic]?.icon} ${TOPIC_META[q.topic]?.name} • Q${i + 1}</div>
+                <h4>${q.question}</h4>
+                <div style="margin: 0.5rem 0;">
+                    ${q.options.map((opt, j) => {
+                        let style = '';
+                        let marker = '';
+                        if (j === q.answer) { style = 'color: #065f46; font-weight: 700;'; marker = ' ✅'; }
+                        if (j === answer && j !== q.answer) { style = 'color: #991b1b; text-decoration: line-through;'; marker = ' ❌'; }
+                        return `<div style="${style}">${letters[j]}. ${opt}${marker}</div>`;
+                    }).join('')}
+                </div>
+                <div class="review-explanation">💡 ${q.explanation}</div>
+            </div>`;
+    });
+
+    section.innerHTML = html;
+    section.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ===== FORMULA QUICK-REFERENCE SHEET =====
+function renderFormulaSheet() {
+    const filter = document.getElementById('formulaTopicFilter')?.value || 'all';
+    const container = document.getElementById('formulaSheetContent');
+    if (!container) return;
+
+    const sheets = {
+        arithmetic: {
+            title: '🔢 Arithmetic & Number Properties',
+            formulas: [
+                { label: 'Sum of n naturals', formula: 'n(n+1)/2' },
+                { label: 'Sum of n²', formula: 'n(n+1)(2n+1)/6' },
+                { label: 'Sum of n³', formula: '[n(n+1)/2]²' },
+                { label: 'First n odd numbers', formula: 'Sum = n²' },
+                { label: 'First n even numbers', formula: 'Sum = n(n+1)' },
+                { label: 'HCF × LCM', formula: '= Product of two numbers' },
+                { label: 'Divisibility by 3', formula: 'Sum of digits ÷ 3' },
+                { label: 'Divisibility by 4', formula: 'Last 2 digits ÷ 4' },
+                { label: 'Divisibility by 8', formula: 'Last 3 digits ÷ 8' },
+                { label: 'Divisibility by 11', formula: '|Sum odd pos − Sum even pos| ÷ 11' },
+                { label: 'Number of factors', formula: 'If n = p^a × q^b → (a+1)(b+1)' },
+                { label: 'Remainder theorem', formula: 'f(a) is remainder when f(x) ÷ (x−a)' }
+            ]
+        },
+        algebra: {
+            title: '📐 Algebra & Equations',
+            formulas: [
+                { label: '(a+b)²', formula: 'a² + 2ab + b²' },
+                { label: '(a−b)²', formula: 'a² − 2ab + b²' },
+                { label: 'a² − b²', formula: '(a+b)(a−b)' },
+                { label: '(a+b)³', formula: 'a³ + 3a²b + 3ab² + b³' },
+                { label: 'a³ + b³', formula: '(a+b)(a²−ab+b²)' },
+                { label: 'a³ − b³', formula: '(a−b)(a²+ab+b²)' },
+                { label: 'Quadratic roots', formula: 'x = (−b ± √(b²−4ac)) / 2a' },
+                { label: 'Sum of roots', formula: '−b/a' },
+                { label: 'Product of roots', formula: 'c/a' },
+                { label: 'log(ab)', formula: 'log a + log b' },
+                { label: 'log(a/b)', formula: 'log a − log b' },
+                { label: 'log(aⁿ)', formula: 'n × log a' },
+                { label: 'logₐb', formula: '1/logᵦa' },
+                { label: 'AP: nth term', formula: 'a + (n−1)d' },
+                { label: 'AP: Sum', formula: 'n/2 × (2a + (n−1)d)' },
+                { label: 'GP: nth term', formula: 'ar^(n−1)' },
+                { label: 'GP: Sum (r≠1)', formula: 'a(rⁿ−1)/(r−1)' }
+            ]
+        },
+        geometry: {
+            title: '📏 Geometry & Mensuration',
+            formulas: [
+                { label: 'Area of circle', formula: 'πr²' },
+                { label: 'Circumference', formula: '2πr' },
+                { label: 'Area of triangle', formula: '½ × base × height' },
+                { label: "Heron's formula", formula: '√[s(s−a)(s−b)(s−c)], s=(a+b+c)/2' },
+                { label: 'Equilateral △ area', formula: '(√3/4)a²' },
+                { label: 'Area of rectangle', formula: 'l × b' },
+                { label: 'Diagonal of rectangle', formula: '√(l² + b²)' },
+                { label: 'Area of trapezium', formula: '½(a+b) × h' },
+                { label: 'Vol of cube', formula: 'a³, TSA = 6a²' },
+                { label: 'Vol of cuboid', formula: 'l×b×h, TSA = 2(lb+bh+lh)' },
+                { label: 'Vol of cylinder', formula: 'πr²h, CSA = 2πrh' },
+                { label: 'Vol of cone', formula: '⅓πr²h, slant = √(r²+h²)' },
+                { label: 'Vol of sphere', formula: '4/3 πr³, SA = 4πr²' },
+                { label: 'Sector area', formula: '(θ/360) × πr²' },
+                { label: 'Arc length', formula: '(θ/360) × 2πr' }
+            ]
+        },
+        combinatorics: {
+            title: '🎲 Permutation, Combination & Probability',
+            formulas: [
+                { label: 'nPr', formula: 'n! / (n−r)!' },
+                { label: 'nCr', formula: 'n! / [r!(n−r)!]' },
+                { label: 'nCr = nC(n−r)', formula: 'Symmetry property' },
+                { label: 'Circular perm', formula: '(n−1)!' },
+                { label: 'With repetition', formula: 'n! / (a!×b!×...)' },
+                { label: 'P(event)', formula: 'Favorable / Total outcomes' },
+                { label: 'P(A∪B)', formula: 'P(A) + P(B) − P(A∩B)' },
+                { label: 'P(A∩B) independent', formula: 'P(A) × P(B)' },
+                { label: 'P(not A)', formula: '1 − P(A)' },
+                { label: 'Derangements', formula: 'n! × Σ(−1)^k/k!, k=0 to n' }
+            ]
+        },
+        time: {
+            title: '⏱️ Time, Speed & Work',
+            formulas: [
+                { label: 'Speed', formula: 'Distance / Time' },
+                { label: 'km/h → m/s', formula: '× 5/18' },
+                { label: 'm/s → km/h', formula: '× 18/5' },
+                { label: 'Avg speed (same dist)', formula: '2ab / (a+b)' },
+                { label: 'Relative speed (opposite)', formula: 'S₁ + S₂' },
+                { label: 'Relative speed (same dir)', formula: '|S₁ − S₂|' },
+                { label: 'Train crossing pole', formula: 'Length / Speed' },
+                { label: 'Upstream speed', formula: 'Boat − Stream' },
+                { label: 'Downstream speed', formula: 'Boat + Stream' },
+                { label: 'Work rate', formula: '1 / Total days' },
+                { label: 'A+B together', formula: 'ab/(a+b) days' },
+                { label: 'Pipe fill & leak', formula: '1/Fill − 1/Leak' },
+                { label: 'Clock angle', formula: '|30H − 5.5M|°' },
+                { label: 'Clock hands meet', formula: '11 times in 12 hours' }
+            ]
+        },
+        commercial: {
+            title: '💰 Profit, Interest & Percentage',
+            formulas: [
+                { label: 'Profit %', formula: '(Profit/CP) × 100' },
+                { label: 'Loss %', formula: '(Loss/CP) × 100' },
+                { label: 'SP from CP', formula: 'CP × (100±P%)/100' },
+                { label: 'Discount', formula: 'MP × (100−D%)/100' },
+                { label: 'Simple Interest', formula: 'P × R × T / 100' },
+                { label: 'CI Amount', formula: 'P(1 + R/100)^T' },
+                { label: 'CI − SI (2 yrs)', formula: 'P(R/100)²' },
+                { label: 'Successive %', formula: 'a + b + ab/100' },
+                { label: 'Population growth', formula: 'P(1 + R/100)^n' },
+                { label: 'Depreciation', formula: 'P(1 − R/100)^n' },
+                { label: 'Alligation ratio', formula: '(Dearer−Mean) : (Mean−Cheaper)' },
+                { label: 'Partnership profit', formula: 'Ratio of (Capital × Time)' }
+            ]
+        },
+        logic: {
+            title: '🧩 Logic & Series Shortcuts',
+            formulas: [
+                { label: 'Handshakes', formula: 'nC2 = n(n−1)/2' },
+                { label: 'Diagonals of polygon', formula: 'n(n−3)/2' },
+                { label: 'Triangles from points', formula: 'nC3 (no 3 collinear)' },
+                { label: 'Calendar: Odd days', formula: 'Leap yr=2, Normal=1' },
+                { label: 'Coding A=1...Z=26', formula: 'Opposite: sum = 27' },
+                { label: 'Direction: Pythagoras', formula: 'd = √(x² + y²)' },
+                { label: 'Seating linear', formula: 'n! arrangements' },
+                { label: 'Seating circular', formula: '(n−1)!' },
+                { label: 'Blood: Gen diff', formula: 'Father/Mother = +1 gen' },
+                { label: 'Mirror image', formula: 'Left ↔ Right flip only' }
+            ]
+        },
+        cs: {
+            title: '💻 CS Fundamentals',
+            formulas: [
+                { label: 'Array access', formula: 'O(1)' },
+                { label: 'Binary search', formula: 'O(log n)' },
+                { label: 'Sorting (best)', formula: 'O(n log n) — Merge/Heap' },
+                { label: 'Linear search', formula: 'O(n)' },
+                { label: 'Stack/Queue ops', formula: 'O(1) push/pop/enqueue/dequeue' },
+                { label: 'BST search avg', formula: 'O(log n), worst O(n)' },
+                { label: 'Hash table avg', formula: 'O(1) insert/search' },
+                { label: 'BFS/DFS', formula: 'O(V + E)' },
+                { label: "Dijkstra's", formula: 'O(V² or V log V with heap)' },
+                { label: 'Page faults (FIFO)', formula: 'Count frame misses' },
+                { label: 'Disk scheduling', formula: 'Total head movement' },
+                { label: 'Subnetting: hosts', formula: '2^(32−prefix) − 2' },
+                { label: 'SQL JOIN', formula: 'INNER, LEFT, RIGHT, FULL' },
+                { label: 'Normalization', formula: '1NF→2NF→3NF→BCNF' }
+            ]
+        }
+    };
+
+    let html = '';
+    const topics = filter === 'all' ? Object.keys(sheets) : [filter];
+
+    topics.forEach(key => {
+        const sheet = sheets[key];
+        if (!sheet) return;
+        html += `<div class="formula-section">
+            <h3 class="formula-section-title">${sheet.title}</h3>
+            <div class="formula-grid-compact">
+                ${sheet.formulas.map(f => `<div class="formula-cell"><strong>${f.label}</strong><span>${f.formula}</span></div>`).join('')}
+            </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+}
+
+// ===== ANALYTICS & CHARTS =====
+function renderAnalytics() {
+    renderAccuracyChart();
+    renderRadarChart();
+    renderActivityHeatmap();
+    renderAchievements();
+    renderTimeChart();
+}
+
+function renderAccuracyChart() {
+    const container = document.getElementById('accuracyChart');
+    if (!container) return;
+    const history = state.progress.testHistory.slice(-20);
+
+    if (history.length < 2) {
+        container.innerHTML = '<p class="empty-state">Take at least 2 tests to see trends.</p>';
+        return;
+    }
+
+    const maxScore = 100;
+    const width = container.clientWidth || 400;
+    const height = 200;
+    const padding = 40;
+    const graphW = width - padding * 2;
+    const graphH = height - padding * 2;
+
+    let svg = `<svg viewBox="0 0 ${width} ${height}" class="chart-svg">`;
+    // Grid lines
+    for (let i = 0; i <= 4; i++) {
+        const y = padding + (graphH / 4) * i;
+        svg += `<line x1="${padding}" y1="${y}" x2="${width-padding}" y2="${y}" stroke="var(--border)" stroke-dasharray="4"/>`;
+        svg += `<text x="${padding-5}" y="${y+4}" text-anchor="end" fill="var(--text-secondary)" font-size="10">${100 - i*25}%</text>`;
+    }
+
+    // Line path
+    const points = history.map((h, i) => {
+        const x = padding + (graphW / (history.length - 1)) * i;
+        const y = padding + graphH - (h.score / maxScore) * graphH;
+        return { x, y, score: h.score };
+    });
+
+    // Area fill
+    svg += `<path d="M${points[0].x},${padding + graphH} ${points.map(p => `L${p.x},${p.y}`).join(' ')} L${points[points.length-1].x},${padding + graphH} Z" fill="var(--primary)" opacity="0.1"/>`;
+    // Line
+    svg += `<polyline points="${points.map(p => `${p.x},${p.y}`).join(' ')}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    // Dots
+    points.forEach(p => {
+        const color = p.score >= 70 ? '#10b981' : p.score >= 40 ? '#f59e0b' : '#ef4444';
+        svg += `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${color}" stroke="white" stroke-width="2"/>`;
+    });
+
+    // Average line
+    const avg = Math.round(history.reduce((s, h) => s + h.score, 0) / history.length);
+    const avgY = padding + graphH - (avg / maxScore) * graphH;
+    svg += `<line x1="${padding}" y1="${avgY}" x2="${width-padding}" y2="${avgY}" stroke="#f59e0b" stroke-dasharray="6,3" stroke-width="1.5"/>`;
+    svg += `<text x="${width-padding+5}" y="${avgY+4}" fill="#f59e0b" font-size="10">avg ${avg}%</text>`;
+
+    svg += '</svg>';
+    container.innerHTML = svg;
+}
+
+function renderRadarChart() {
+    const container = document.getElementById('radarChart');
+    if (!container) return;
+
+    const topics = Object.entries(TOPIC_META);
+    const n = topics.length;
+    const cx = 150, cy = 150, r = 110;
+
+    let svg = `<svg viewBox="0 0 300 300" class="chart-svg">`;
+
+    // Grid rings
+    for (let ring = 1; ring <= 4; ring++) {
+        const rr = (r / 4) * ring;
+        const points = [];
+        for (let i = 0; i < n; i++) {
+            const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+            points.push(`${cx + rr * Math.cos(angle)},${cy + rr * Math.sin(angle)}`);
+        }
+        svg += `<polygon points="${points.join(' ')}" fill="none" stroke="var(--border)" stroke-width="0.5"/>`;
+    }
+
+    // Axes
+    for (let i = 0; i < n; i++) {
+        const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+        const x2 = cx + r * Math.cos(angle);
+        const y2 = cy + r * Math.sin(angle);
+        svg += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="var(--border)" stroke-width="0.5"/>`;
+        // Labels
+        const lx = cx + (r + 18) * Math.cos(angle);
+        const ly = cy + (r + 18) * Math.sin(angle);
+        svg += `<text x="${lx}" y="${ly}" text-anchor="middle" fill="var(--text-secondary)" font-size="9">${topics[i][1].icon}</text>`;
+    }
+
+    // Data polygon
+    const dataPoints = [];
+    for (let i = 0; i < n; i++) {
+        const stats = state.progress.topicStats[topics[i][0]] || { attempted: 0, correct: 0 };
+        const pct = stats.attempted > 0 ? stats.correct / stats.attempted : 0;
+        const angle = (Math.PI * 2 / n) * i - Math.PI / 2;
+        const dr = r * pct;
+        dataPoints.push(`${cx + dr * Math.cos(angle)},${cy + dr * Math.sin(angle)}`);
+    }
+
+    svg += `<polygon points="${dataPoints.join(' ')}" fill="var(--primary)" fill-opacity="0.2" stroke="var(--primary)" stroke-width="2"/>`;
+    // Data dots
+    dataPoints.forEach(p => {
+        const [x, y] = p.split(',');
+        svg += `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--primary)" stroke="white" stroke-width="1.5"/>`;
+    });
+
+    svg += '</svg>';
+    container.innerHTML = svg;
+}
+
+function renderActivityHeatmap() {
+    const container = document.getElementById('activityHeatmap');
+    if (!container) return;
+
+    // Build activity map from activities list (last 84 days)
+    const activityByDate = {};
+    state.progress.activities.forEach(a => {
+        // Extract date from the activity (approximate from recent activities)
+        const today = new Date().toDateString();
+        if (!activityByDate[today]) activityByDate[today] = 0;
+        activityByDate[today]++;
+    });
+
+    // Also count from test history
+    state.progress.testHistory.forEach(h => {
+        if (!activityByDate[h.date]) activityByDate[h.date] = 0;
+        activityByDate[h.date] += 2;
+    });
+
+    // Generate 84 days grid (12 weeks × 7 days)
+    const today = new Date();
+    let html = '<div class="heatmap-grid">';
+    for (let week = 11; week >= 0; week--) {
+        for (let day = 0; day < 7; day++) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - (week * 7 + (6 - day)));
+            const dateStr = d.toLocaleDateString();
+            const count = activityByDate[dateStr] || 0;
+            let level = 0;
+            if (count >= 5) level = 4;
+            else if (count >= 3) level = 3;
+            else if (count >= 2) level = 2;
+            else if (count >= 1) level = 1;
+            html += `<div class="heatmap-cell level-${level}" title="${d.toLocaleDateString('en-US', {month:'short',day:'numeric'})}: ${count} activities"></div>`;
+        }
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function renderAchievements() {
+    const container = document.getElementById('achievementsList');
+    if (!container) return;
+
+    const p = state.progress;
+    const achievements = [
+        { icon: '🎯', title: 'First Quiz', desc: 'Complete your first quiz', done: p.testsCompleted >= 1 },
+        { icon: '🔥', title: '7 Day Streak', desc: 'Study 7 days in a row', done: p.streak >= 7 },
+        { icon: '💯', title: 'Perfect Score', desc: 'Score 100% on a quiz', done: p.testHistory.some(h => h.score === 100) },
+        { icon: '📚', title: '100 Questions', desc: 'Answer 100 questions', done: p.totalAttempted >= 100 },
+        { icon: '🏆', title: '10 Tests Done', desc: 'Complete 10 quizzes', done: p.testsCompleted >= 10 },
+        { icon: '⚡', title: 'Speed Demon', desc: 'Finish a 25Q test under 10 min', done: p.testHistory.some(h => h.total >= 25 && parseInt(h.time) < 10) },
+        { icon: '🧠', title: 'All Topics', desc: 'Attempt all 8 topics', done: Object.keys(p.topicStats).length >= 8 },
+        { icon: '🍅', title: 'Focus Master', desc: 'Complete 4 Pomodoro rounds', done: p.totalTime >= 100 * 60 },
+        { icon: '📝', title: 'Note Taker', desc: 'Save 10 notes', done: (p.notes?.length || 0) >= 10 },
+        { icon: '⭐', title: '70% Average', desc: 'Maintain 70%+ overall accuracy', done: p.totalAttempted > 20 && (p.totalCorrect / p.totalAttempted) >= 0.7 },
+        { icon: '🎓', title: '300 Questions', desc: 'Answer 300 questions', done: p.totalAttempted >= 300 },
+        { icon: '🌟', title: 'Streak Master', desc: 'Achieve 30 day streak', done: p.streak >= 30 }
+    ];
+
+    container.innerHTML = achievements.map(a => `
+        <div class="achievement-item ${a.done ? 'unlocked' : 'locked'}">
+            <span class="achievement-icon">${a.icon}</span>
+            <div class="achievement-text">
+                <strong>${a.title}</strong>
+                <small>${a.desc}</small>
+            </div>
+            ${a.done ? '<i class="fas fa-check-circle" style="color:#10b981;"></i>' : '<i class="fas fa-lock" style="color:var(--text-secondary);opacity:0.4;"></i>'}
+        </div>
+    `).join('');
+}
+
+function renderTimeChart() {
+    const container = document.getElementById('timeChart');
+    if (!container) return;
+
+    const topicTimes = {};
+    state.progress.testHistory.forEach(h => {
+        // Estimate time per topic from test data
+        const timeVal = parseInt(h.time) || 0;
+        const topicsArr = Object.keys(TOPIC_META);
+        topicsArr.forEach(t => {
+            if (!topicTimes[t]) topicTimes[t] = 0;
+        });
+    });
+
+    // Use topic stats as proxy for time distribution
+    const totalAttempted = state.progress.totalAttempted || 1;
+    let html = '<div class="time-bars">';
+    for (const [key, meta] of Object.entries(TOPIC_META)) {
+        const stats = state.progress.topicStats[key] || { attempted: 0 };
+        const pct = Math.round((stats.attempted / totalAttempted) * 100);
+        html += `<div class="time-bar-row">
+            <span class="time-bar-label">${meta.icon} ${meta.name}</span>
+            <div class="time-bar-track"><div class="time-bar-fill" style="width:${pct}%;background:${meta.color};"></div></div>
+            <span class="time-bar-value">${stats.attempted}q</span>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html || '<p class="empty-state">Take tests to see time distribution.</p>';
+}
+
+// ===== REVISION SCHEDULE GENERATOR =====
+function generateSchedule() {
+    const examDateStr = document.getElementById('examDateInput').value;
+    const hoursPerDay = parseInt(document.getElementById('hoursPerDay').value) || 4;
+    const container = document.getElementById('scheduleOutput');
+
+    if (!examDateStr) {
+        container.innerHTML = '<p class="empty-state">Please select your exam date to generate a schedule.</p>';
+        return;
+    }
+
+    const examDate = new Date(examDateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysLeft = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+
+    if (daysLeft <= 0) {
+        container.innerHTML = '<p class="empty-state" style="color:var(--danger);">Exam date must be in the future!</p>';
+        return;
+    }
+
+    // Get selected topics
+    const selectedTopics = [];
+    document.querySelectorAll('#scheduleTopics input:checked').forEach(cb => selectedTopics.push(cb.value));
+    if (selectedTopics.length === 0) {
+        container.innerHTML = '<p class="empty-state">Please select at least one topic.</p>';
+        return;
+    }
+
+    // Get weak areas from progress
+    const weakTopics = [];
+    const strongTopics = [];
+    selectedTopics.forEach(t => {
+        const stats = state.progress.topicStats[t] || { attempted: 0, correct: 0 };
+        const pct = stats.attempted > 0 ? Math.round((stats.correct / stats.attempted) * 100) : 0;
+        if (pct < 50) weakTopics.push(t);
+        else strongTopics.push(t);
+    });
+
+    // Generate day-by-day plan
+    const plan = [];
+    const phases = [];
+
+    if (daysLeft >= 14) {
+        phases.push({ name: 'Learning Phase', days: Math.floor(daysLeft * 0.5), focus: 'Study concepts & solve examples' });
+        phases.push({ name: 'Practice Phase', days: Math.floor(daysLeft * 0.3), focus: 'Take quizzes & solve problems' });
+        phases.push({ name: 'Revision Phase', days: daysLeft - Math.floor(daysLeft * 0.5) - Math.floor(daysLeft * 0.3), focus: 'Review weak areas & mock tests' });
+    } else if (daysLeft >= 7) {
+        phases.push({ name: 'Intensive Study', days: Math.floor(daysLeft * 0.6), focus: 'Cover key topics rapidly' });
+        phases.push({ name: 'Mock & Review', days: daysLeft - Math.floor(daysLeft * 0.6), focus: 'Full mocks + weak area revision' });
+    } else {
+        phases.push({ name: 'Crash Revision', days: daysLeft, focus: 'Focus on formulas, key tricks, and mock tests' });
+    }
+
+    let dayCount = 0;
+    const topicNames = {};
+    selectedTopics.forEach(t => topicNames[t] = TOPIC_META[t]?.name || t);
+
+    phases.forEach(phase => {
+        for (let d = 0; d < phase.days; d++) {
+            dayCount++;
+            const date = new Date(today);
+            date.setDate(date.getDate() + dayCount);
+
+            // Rotate topics with weak areas getting more slots
+            const allSlots = [...weakTopics, ...weakTopics, ...selectedTopics]; // weak topics appear more
+            const topicIdx = (dayCount - 1) % allSlots.length;
+            const mainTopic = allSlots[topicIdx];
+            const secondTopic = selectedTopics[(dayCount) % selectedTopics.length];
+
+            const activities = [];
+            const slotHours = hoursPerDay;
+
+            if (phase.name.includes('Learning') || phase.name.includes('Intensive') || phase.name.includes('Crash')) {
+                activities.push(`📖 Study ${topicNames[mainTopic]} concepts (${Math.ceil(slotHours * 0.4)}h)`);
+                activities.push(`✏️ Solve ${topicNames[mainTopic]} problems (${Math.ceil(slotHours * 0.3)}h)`);
+                activities.push(`🃏 Flashcard review: ${topicNames[secondTopic]} (${Math.ceil(slotHours * 0.15)}h)`);
+                activities.push(`📝 Note key formulas & tricks (${Math.ceil(slotHours * 0.15)}h)`);
+            } else if (phase.name.includes('Practice')) {
+                activities.push(`📝 Take 25Q quiz on ${topicNames[mainTopic]} (30min)`);
+                activities.push(`✏️ Solve hard problems: ${topicNames[secondTopic]} (${Math.ceil(slotHours * 0.3)}h)`);
+                activities.push(`🔍 Review wrong answers & notes (${Math.ceil(slotHours * 0.2)}h)`);
+                activities.push(`📋 Time-bound practice set (${Math.ceil(slotHours * 0.2)}h)`);
+            } else {
+                activities.push(`📋 Full Mock Test (2h)`);
+                activities.push(`🔍 Analyze & review mistakes (${Math.ceil(slotHours * 0.3)}h)`);
+                activities.push(`📐 Revise formulas: ${topicNames[mainTopic]} (${Math.ceil(slotHours * 0.2)}h)`);
+                activities.push(`🃏 Quick flashcard run (15min)`);
+            }
+
+            plan.push({
+                day: dayCount,
+                date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                phase: phase.name,
+                activities,
+                mainTopic
+            });
+        }
+    });
+
+    // Render
+    let html = `<div class="schedule-summary card glass-card">
+        <h3>📅 Your ${daysLeft}-Day Study Plan</h3>
+        <div class="schedule-meta">
+            <span><i class="fas fa-calendar"></i> ${daysLeft} days until exam</span>
+            <span><i class="fas fa-clock"></i> ${hoursPerDay}h/day → ${daysLeft * hoursPerDay}h total</span>
+            <span><i class="fas fa-book"></i> ${selectedTopics.length} topics selected</span>
+            ${weakTopics.length > 0 ? `<span><i class="fas fa-crosshairs"></i> ${weakTopics.length} weak areas prioritized</span>` : ''}
+        </div>
+    </div>`;
+
+    // Phase overview
+    html += '<div class="schedule-phases">';
+    phases.forEach(phase => {
+        html += `<div class="phase-badge"><strong>${phase.name}</strong> (${phase.days} days) — ${phase.focus}</div>`;
+    });
+    html += '</div>';
+
+    // Daily plan
+    html += '<div class="schedule-days">';
+    let currentPhase = '';
+    plan.forEach(day => {
+        if (day.phase !== currentPhase) {
+            currentPhase = day.phase;
+            html += `<div class="schedule-phase-header">${currentPhase}</div>`;
+        }
+        const topicMeta = TOPIC_META[day.mainTopic];
+        html += `<div class="schedule-day-card">
+            <div class="schedule-day-header">
+                <span class="schedule-day-num">Day ${day.day}</span>
+                <span class="schedule-day-date">${day.date}</span>
+                <span class="schedule-day-topic" style="color:${topicMeta?.color || '#666'}">${topicMeta?.icon || ''} ${topicMeta?.name || day.mainTopic}</span>
+            </div>
+            <ul class="schedule-activities">
+                ${day.activities.map(a => `<li>${a}</li>`).join('')}
+            </ul>
+        </div>`;
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+// ===== UPDATE NAVIGATION FOR NEW PAGES =====
+// Patch navigateTo to include new pages
+const _origNavigateTo = navigateTo;
+navigateTo = function(page) {
+    _origNavigateTo(page);
+    if (page === 'formulas') renderFormulaSheet();
+    if (page === 'analytics') renderAnalytics();
+    if (page === 'schedule') generateSchedule();
+};
+
+// Update page titles
+(function() {
+    const origNav = _origNavigateTo;
+    // The page title mapping is already in the original navigateTo
+})();
