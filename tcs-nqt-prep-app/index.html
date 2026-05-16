@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCS NQT Prep Hub — All-in-One Preparation</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>NQT Prep Hub</span>
+            </div>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <ul class="nav-links">
+            <li class="active" data-page="dashboard">
+                <i class="fas fa-th-large"></i><span>Dashboard</span>
+            </li>
+            <li data-page="quiz">
+                <i class="fas fa-pen-fancy"></i><span>Take a Test</span>
+            </li>
+            <li data-page="study">
+                <i class="fas fa-book-open"></i><span>Study Materials</span>
+            </li>
+            <li data-page="interview">
+                <i class="fas fa-user-tie"></i><span>Interview Prep</span>
+            </li>
+            <li data-page="flashcards">
+                <i class="fas fa-clone"></i><span>Flashcards</span>
+            </li>
+            <li data-page="resources">
+                <i class="fas fa-compass"></i><span>Resources & Tips</span>
+            </li>
+            <li data-page="progress">
+                <i class="fas fa-chart-line"></i><span>My Progress</span>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="exam-countdown" id="examCountdown">
+                <i class="fas fa-clock"></i>
+                <span id="countdownText">Loading...</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="mainContent" class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="top-bar-left">
+                <h2 id="pageTitle">Dashboard</h2>
+            </div>
+            <div class="top-bar-right">
+                <div class="streak-badge" id="streakBadge">
+                    <i class="fas fa-fire"></i>
+                    <span id="streakCount">0</span> day streak
+                </div>
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Page -->
+        <section id="page-dashboard" class="page active">
+            <div class="welcome-banner">
+                <div class="welcome-text">
+                    <h1>Welcome back! 🚀</h1>
+                    <p>Your TCS NQT exam is approaching. Let's ace it!</p>
+                </div>
+                <div class="quick-start">
+                    <button class="btn btn-primary btn-lg" onclick="navigateTo('quiz')">
+                        <i class="fas fa-play"></i> Start Practice Test
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalAttempted">0</h3>
+                        <p>Questions Attempted</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="accuracy">0%</h3>
+                        <p>Accuracy Rate</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalTime">0m</h3>
+                        <p>Study Time</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="testsCompleted">0</h3>
+                        <p>Tests Completed</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card topic-progress-card">
+                    <h3><i class="fas fa-chart-pie"></i> Topic-wise Progress</h3>
+                    <div id="topicProgress" class="topic-bars"></div>
+                </div>
+                <div class="card recent-activity-card">
+                    <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                    <div id="recentActivity" class="activity-list">
+                        <p class="empty-state">No activity yet. Start a quiz!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card weak-areas-card">
+                <h3><i class="fas fa-exclamation-triangle"></i> Focus Areas — Topics to Improve</h3>
+                <div id="weakAreas" class="weak-areas-grid">
+                    <p class="empty-state">Take a few quizzes to see your weak areas.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quiz / Test Page -->
+        <section id="page-quiz" class="page">
+            <!-- Quiz Setup -->
+            <div id="quizSetup" class="quiz-setup">
+                <h2><i class="fas fa-pen-fancy"></i> Configure Your Test</h2>
+                <div class="quiz-config-grid">
+                    <div class="config-card">
+                        <h4>Select Topics</h4>
+                        <div class="topic-checkboxes" id="topicCheckboxes">
+                            <label><input type="checkbox" value="quantitative" checked> Quantitative Aptitude</label>
+                            <label><input type="checkbox" value="logical" checked> Logical Reasoning</label>
+                            <label><input type="checkbox" value="verbal" checked> Verbal Ability</label>
+                            <label><input type="checkbox" value="programming" checked> Programming Concepts</label>
+                            <label><input type="checkbox" value="dbms"> DBMS & SQL</label>
+                            <label><input type="checkbox" value="networking"> Computer Networks</label>
+                            <label><input type="checkbox" value="os"> Operating Systems</label>
+                            <label><input type="checkbox" value="dsa"> Data Structures</label>
+                        </div>
+                    </div>
+                    <div class="config-card">
+                        <h4>Test Settings</h4>
+                        <div class="setting-group">
+                            <label>Number of Questions</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="numQ" value="10"> 10</label>
+                                <label><input type="radio" name="numQ" value="25" checked> 25</label>
+                                <label><input type="radio" name="numQ" value="50"> 50</label>
+                                <label><input type="radio" name="numQ" value="100"> 100</label>
+                            </div>
+                        </div>
+                        <div class="setting-group">
+                            <label>Difficulty</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="diff" value="easy"> Easy</label>
+                                <label><input type="radio" name="diff" value="medium" checked> Mixed</label>
+                                <label><input type="radio" name="diff" value="hard"> Hard</label>
+                            </div>
+                        </div>
+                        <div class="setting-group">
+                            <label>Time Limit</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="timeLimit" value="0"> No Limit</label>
+                                <label><input type="radio" name="timeLimit" value="30" checked> 30 min</label>
+                                <label><input type="radio" name="timeLimit" value="60"> 60 min</label>
+                                <label><input type="radio" name="timeLimit" value="90"> 90 min</label>
+                            </div>
+                        </div>
+                        <div class="setting-group">
+                            <label><input type="checkbox" id="instantFeedback" checked> Show instant feedback</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="quick-test-btns">
+                    <h4>Quick Start</h4>
+                    <button class="btn btn-outline" onclick="startQuickTest('quantitative')">🔢 Quant Only</button>
+                    <button class="btn btn-outline" onclick="startQuickTest('logical')">🧩 Reasoning Only</button>
+                    <button class="btn btn-outline" onclick="startQuickTest('verbal')">📝 Verbal Only</button>
+                    <button class="btn btn-outline" onclick="startQuickTest('programming')">💻 Programming Only</button>
+                    <button class="btn btn-outline" onclick="startQuickTest('mock')">📋 Full Mock Test (100Q)</button>
+                </div>
+                <button class="btn btn-primary btn-lg" onclick="startQuiz()" style="margin-top: 1.5rem;">
+                    <i class="fas fa-rocket"></i> Start Test
+                </button>
+            </div>
+
+            <!-- Active Quiz -->
+            <div id="quizActive" class="quiz-active" style="display:none;">
+                <div class="quiz-header">
+                    <div class="quiz-info">
+                        <span class="q-counter">Question <span id="qCurrent">1</span> of <span id="qTotal">25</span></span>
+                        <span class="q-topic-badge" id="qTopicBadge">Quantitative</span>
+                    </div>
+                    <div class="quiz-timer" id="quizTimer">
+                        <i class="fas fa-clock"></i> <span id="timerDisplay">30:00</span>
+                    </div>
+                </div>
+                <div class="quiz-progress-bar">
+                    <div class="quiz-progress-fill" id="quizProgressFill"></div>
+                </div>
+                <div class="question-card" id="questionCard">
+                    <h3 id="questionText"></h3>
+                    <div id="optionsList" class="options-list"></div>
+                    <div id="feedbackBox" class="feedback-box" style="display:none;"></div>
+                </div>
+                <div class="quiz-nav">
+                    <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()">
+                        <i class="fas fa-arrow-left"></i> Previous
+                    </button>
+                    <div class="q-navigator" id="qNavigator"></div>
+                    <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">
+                        Next <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button class="btn btn-success" id="submitBtn" onclick="submitQuiz()" style="display:none;">
+                        <i class="fas fa-paper-plane"></i> Submit Test
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz Results -->
+            <div id="quizResults" class="quiz-results" style="display:none;">
+                <div class="results-header">
+                    <div class="score-circle" id="scoreCircle">
+                        <svg viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" stroke="#e0e0e0" stroke-width="8" fill="none"/>
+                            <circle id="scoreArc" cx="60" cy="60" r="54" stroke="#4caf50" stroke-width="8" fill="none"
+                                stroke-dasharray="339.292" stroke-dashoffset="339.292" stroke-linecap="round"
+                                transform="rotate(-90 60 60)"/>
+                        </svg>
+                        <div class="score-text">
+                            <span id="scorePercent">0%</span>
+                            <small>Score</small>
+                        </div>
+                    </div>
+                    <div class="results-stats">
+                        <div class="result-stat correct"><i class="fas fa-check"></i> <span id="correctCount">0</span> Correct</div>
+                        <div class="result-stat wrong"><i class="fas fa-times"></i> <span id="wrongCount">0</span> Wrong</div>
+                        <div class="result-stat skipped"><i class="fas fa-forward"></i> <span id="skippedCount">0</span> Skipped</div>
+                        <div class="result-stat time"><i class="fas fa-clock"></i> <span id="timeTaken">0m</span></div>
+                    </div>
+                </div>
+                <div class="results-topic-breakdown" id="topicBreakdown"></div>
+                <div class="results-actions">
+                    <button class="btn btn-primary" onclick="reviewQuiz()"><i class="fas fa-search"></i> Review Answers</button>
+                    <button class="btn btn-secondary" onclick="retakeQuiz()"><i class="fas fa-redo"></i> Retake Test</button>
+                    <button class="btn btn-outline" onclick="showQuizSetup()"><i class="fas fa-cog"></i> New Test</button>
+                </div>
+                <div id="reviewSection" class="review-section" style="display:none;"></div>
+            </div>
+        </section>
+
+        <!-- Study Materials Page -->
+        <section id="page-study" class="page">
+            <div class="study-tabs">
+                <button class="study-tab active" data-tab="concepts">📚 Core Concepts</button>
+                <button class="study-tab" data-tab="dsa">🧮 DSA Patterns</button>
+                <button class="study-tab" data-tab="coding">💻 Coding Problems</button>
+                <button class="study-tab" data-tab="papers">📋 Previous Papers</button>
+            </div>
+
+            <div id="tab-concepts" class="study-content active">
+                <div class="study-grid">
+                    <div class="study-card" onclick="openStudyTopic('quant')">
+                        <div class="study-icon" style="background: #667eea;">🔢</div>
+                        <h4>Quantitative Aptitude</h4>
+                        <p>Speed, Profit/Loss, Ratios, SI/CI, Percentages</p>
+                        <div class="study-meta"><span>45+ formulas</span><span>Key shortcuts</span></div>
+                    </div>
+                    <div class="study-card" onclick="openStudyTopic('reasoning')">
+                        <div class="study-icon" style="background: #f5576c;">🧩</div>
+                        <h4>Logical Reasoning</h4>
+                        <p>Series, Blood Relations, Coding-Decoding, Syllogisms</p>
+                        <div class="study-meta"><span>Pattern tricks</span><span>Practice sets</span></div>
+                    </div>
+                    <div class="study-card" onclick="openStudyTopic('verbal')">
+                        <div class="study-icon" style="background: #43e97b;">📝</div>
+                        <h4>Verbal Ability</h4>
+                        <p>Synonyms, Antonyms, Grammar, Reading Comprehension</p>
+                        <div class="study-meta"><span>Word lists</span><span>Grammar rules</span></div>
+                    </div>
+                    <div class="study-card" onclick="openStudyTopic('programming')">
+                        <div class="study-icon" style="background: #4facfe;">💻</div>
+                        <h4>Programming Logic</h4>
+                        <p>Pseudocode, Output Prediction, OOP, Complexity</p>
+                        <div class="study-meta"><span>Java/Python/C</span><span>Code tracing</span></div>
+                    </div>
+                    <div class="study-card" onclick="openStudyTopic('dbms')">
+                        <div class="study-icon" style="background: #fa709a;">🗃️</div>
+                        <h4>DBMS & SQL</h4>
+                        <p>SQL Queries, Normalization, Joins, Transactions</p>
+                        <div class="study-meta"><span>Query practice</span><span>ER diagrams</span></div>
+                    </div>
+                    <div class="study-card" onclick="openStudyTopic('os')">
+                        <div class="study-icon" style="background: #a18cd1;">⚙️</div>
+                        <h4>Operating Systems</h4>
+                        <p>Process, Memory, Deadlocks, Scheduling, Virtual Memory</p>
+                        <div class="study-meta"><span>Key concepts</span><span>Diagrams</span></div>
+                    </div>
+                    <div class="study-card" onclick="openStudyTopic('networks')">
+                        <div class="study-icon" style="background: #fbc2eb;">🌐</div>
+                        <h4>Computer Networks</h4>
+                        <p>OSI Model, TCP/IP, HTTP, DNS, REST APIs</p>
+                        <div class="study-meta"><span>Protocol comparison</span><span>Diagrams</span></div>
+                    </div>
+                    <div class="study-card" onclick="openStudyTopic('sysdesign')">
+                        <div class="study-icon" style="background: #f093fb;">🏗️</div>
+                        <h4>System Design Basics</h4>
+                        <p>URL Shortener, Docker, Microservices, Caching</p>
+                        <div class="study-meta"><span>Case studies</span><span>Architecture</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-dsa" class="study-content"></div>
+            <div id="tab-coding" class="study-content"></div>
+            <div id="tab-papers" class="study-content"></div>
+
+            <!-- Study Topic Detail Modal -->
+            <div id="studyModal" class="modal" style="display:none;">
+                <div class="modal-content large-modal">
+                    <div class="modal-header">
+                        <h2 id="studyModalTitle"></h2>
+                        <button class="close-btn" onclick="closeStudyModal()">&times;</button>
+                    </div>
+                    <div class="modal-body" id="studyModalBody"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interview Prep Page -->
+        <section id="page-interview" class="page">
+            <div class="interview-header">
+                <h2><i class="fas fa-user-tie"></i> Interview Preparation</h2>
+                <p>Prepare for Technical, Managerial, and HR rounds</p>
+            </div>
+            <div class="interview-tabs">
+                <button class="int-tab active" data-round="technical">Round 1: Technical</button>
+                <button class="int-tab" data-round="managerial">Round 2: Managerial</button>
+                <button class="int-tab" data-round="hr">Round 3: HR</button>
+            </div>
+            <div id="interviewContent" class="interview-content"></div>
+        </section>
+
+        <!-- Flashcards Page -->
+        <section id="page-flashcards" class="page">
+            <div class="flashcard-controls">
+                <h2><i class="fas fa-clone"></i> Flashcards</h2>
+                <div class="fc-topic-select">
+                    <select id="fcTopicSelect" onchange="loadFlashcards()">
+                        <option value="all">All Topics</option>
+                        <option value="quantitative">Quantitative Formulas</option>
+                        <option value="programming">Programming Concepts</option>
+                        <option value="dbms">DBMS & SQL</option>
+                        <option value="os">Operating Systems</option>
+                        <option value="networks">Computer Networks</option>
+                        <option value="tcs">TCS Facts</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flashcard-container">
+                <button class="fc-nav-btn" onclick="prevFlashcard()"><i class="fas fa-chevron-left"></i></button>
+                <div class="flashcard" id="flashcard" onclick="flipFlashcard()">
+                    <div class="flashcard-inner" id="flashcardInner">
+                        <div class="flashcard-front" id="flashcardFront">
+                            <span class="fc-hint">Click to flip</span>
+                            <h3>Loading...</h3>
+                        </div>
+                        <div class="flashcard-back" id="flashcardBack">
+                            <p>Loading...</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="fc-nav-btn" onclick="nextFlashcard()"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="fc-progress">
+                <span id="fcCounter">1 / 1</span>
+                <div class="fc-actions">
+                    <button class="btn btn-sm btn-danger" onclick="markFlashcard('hard')"><i class="fas fa-times"></i> Hard</button>
+                    <button class="btn btn-sm btn-warning" onclick="markFlashcard('medium')"><i class="fas fa-minus"></i> Okay</button>
+                    <button class="btn btn-sm btn-success" onclick="markFlashcard('easy')"><i class="fas fa-check"></i> Easy</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resources & Tips Page -->
+        <section id="page-resources" class="page">
+            <h2><i class="fas fa-compass"></i> Resources & Exam Strategy</h2>
+
+            <!-- Resource Tab Navigation -->
+            <div class="resource-tabs">
+                <button class="res-tab active" data-restab="overview"><i class="fas fa-info-circle"></i> Exam Overview</button>
+                <button class="res-tab" data-restab="videos"><i class="fab fa-youtube"></i> Video Resources</button>
+                <button class="res-tab" data-restab="links"><i class="fas fa-link"></i> Practice & Links</button>
+                <button class="res-tab" data-restab="strategy"><i class="fas fa-chess"></i> Strategy & Tips</button>
+                <button class="res-tab" data-restab="tcs-info"><i class="fas fa-building"></i> Know TCS</button>
+            </div>
+
+            <!-- Tab: Exam Overview -->
+            <div id="restab-overview" class="res-content active">
+                <div class="card exam-pattern-card glass-card">
+                    <h3>📋 TCS NQT Exam Pattern (2025-26)</h3>
+                    <p class="card-subtitle">The Foundation test is common for all. Advanced test is for Digital profiles only.</p>
+                    <table class="exam-table">
+                        <thead>
+                            <tr><th>Section</th><th>Questions</th><th>Duration</th><th>Key Topics</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Numerical Ability</td><td>26</td><td>40 min</td><td>Percentages, SI/CI, Ratio, Work, Speed, Probability</td></tr>
+                            <tr><td>Verbal Ability</td><td>24</td><td>30 min</td><td>Grammar, Vocabulary, RC, Para Jumbles, Cloze Test</td></tr>
+                            <tr><td>Reasoning Ability</td><td>30</td><td>50 min</td><td>Series, Coding-Decoding, Blood Relations, Puzzles, Seating</td></tr>
+                            <tr><td>Programming Logic</td><td>10</td><td>15 min</td><td>Pseudocode, Output Prediction, DS, Algorithms</td></tr>
+                            <tr><td>Coding (Advanced)</td><td>2</td><td>15 min</td><td>Implementation, Logic, Strings, Arrays (C/Java/Python)</td></tr>
+                            <tr class="total-row"><td><strong>Total</strong></td><td><strong>92</strong></td><td><strong>150 min</strong></td><td></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="info-cards-row">
+                    <div class="card glass-card info-highlight">
+                        <div class="info-icon green"><i class="fas fa-check-circle"></i></div>
+                        <h4>No Negative Marking</h4>
+                        <p>Attempt every question. There is no penalty for wrong answers.</p>
+                    </div>
+                    <div class="card glass-card info-highlight">
+                        <div class="info-icon blue"><i class="fas fa-laptop-code"></i></div>
+                        <h4>Online Proctored</h4>
+                        <p>Test is conducted remotely via webcam. Keep a clean desk & stable internet.</p>
+                    </div>
+                    <div class="card glass-card info-highlight">
+                        <div class="info-icon purple"><i class="fas fa-trophy"></i></div>
+                        <h4>Score Valid 2 Years</h4>
+                        <p>Your NQT score remains valid for 2 years. Can reattempt after 6 months.</p>
+                    </div>
+                    <div class="card glass-card info-highlight">
+                        <div class="info-icon orange"><i class="fas fa-money-bill-wave"></i></div>
+                        <h4>Package: 3.3 - 11+ LPA</h4>
+                        <p>Ninja: 3.36 LPA | Digital: 7-9 LPA | Prime: 9-11+ LPA</p>
+                    </div>
+                </div>
+
+                <div class="card glass-card">
+                    <h3>🎓 Eligibility & Important Details</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><strong>Qualification:</strong> B.E/B.Tech/M.E/M.Tech/MCA/M.Sc (CS/IT)</div>
+                        <div class="detail-item"><i class="fas fa-percent"></i><strong>Min Marks:</strong> 60% aggregate (no backlogs at joining)</div>
+                        <div class="detail-item"><i class="fas fa-calendar"></i><strong>Batch:</strong> 2025 & 2026 pass-outs</div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><strong>Gap:</strong> Maximum 2 years gap in education</div>
+                        <div class="detail-item"><i class="fas fa-file-alt"></i><strong>Sections:</strong> Foundation (all roles) + Advanced (Digital roles)</div>
+                        <div class="detail-item"><i class="fas fa-redo"></i><strong>Reattempt:</strong> After 6 months from last attempt</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Video Resources -->
+            <div id="restab-videos" class="res-content">
+                <div class="video-section">
+                    <div class="card glass-card video-playlist-card featured">
+                        <div class="playlist-badge"><i class="fab fa-youtube"></i> Featured Playlist</div>
+                        <h3><i class="fab fa-youtube" style="color:#ff0000;"></i> TCS NQT Complete Preparation</h3>
+                        <p class="playlist-desc">Complete preparation guide for TCS NQT — covers aptitude, reasoning, verbal, and programming topics with solved examples.</p>
+                        <a href="https://youtube.com/playlist?list=PLYA_1SYVpPQwfBTLSb8TXPV8Ft7j3kItQ" target="_blank" rel="noopener noreferrer" class="btn btn-youtube">
+                            <i class="fab fa-youtube"></i> Watch Full Playlist
+                        </a>
+                    </div>
+
+                    <div class="card glass-card video-playlist-card featured">
+                        <div class="playlist-badge"><i class="fab fa-youtube"></i> Featured Playlist</div>
+                        <h3><i class="fab fa-youtube" style="color:#ff0000;"></i> TCS NQT Previous Year Questions</h3>
+                        <p class="playlist-desc">Detailed solutions for TCS NQT previous year questions — understand the exam pattern through real PYQ walkthroughs.</p>
+                        <a href="https://youtube.com/playlist?list=PLMufDeLh5x2Ai3nNZpimiFYEtl_Xytd2Q" target="_blank" rel="noopener noreferrer" class="btn btn-youtube">
+                            <i class="fab fa-youtube"></i> Watch Full Playlist
+                        </a>
+                    </div>
+                </div>
+
+                <h3 class="section-heading">📺 Topic-wise Video Resources</h3>
+                <div class="video-grid" id="videoGrid"></div>
+
+                <h3 class="section-heading">🎓 Recommended YouTube Channels</h3>
+                <div class="channel-grid">
+                    <div class="card glass-card channel-card">
+                        <div class="channel-icon" style="background:#ff4444;">P</div>
+                        <div class="channel-info">
+                            <h4>PrepInsta</h4>
+                            <p>TCS NQT specific preparation with solved papers and mock tests</p>
+                            <a href="https://www.youtube.com/@PrepInsta" target="_blank" rel="noopener noreferrer" class="channel-link">Visit Channel →</a>
+                        </div>
+                    </div>
+                    <div class="card glass-card channel-card">
+                        <div class="channel-icon" style="background:#00aa00;">G</div>
+                        <div class="channel-info">
+                            <h4>GeeksforGeeks</h4>
+                            <p>DSA, Programming concepts, and interview preparation resources</p>
+                            <a href="https://www.youtube.com/@GeeksforGeeksVideos" target="_blank" rel="noopener noreferrer" class="channel-link">Visit Channel →</a>
+                        </div>
+                    </div>
+                    <div class="card glass-card channel-card">
+                        <div class="channel-icon" style="background:#5856d6;">T</div>
+                        <div class="channel-info">
+                            <h4>Talent Battle</h4>
+                            <p>Placement preparation videos with company-specific content</p>
+                            <a href="https://www.youtube.com/@TalentBattle" target="_blank" rel="noopener noreferrer" class="channel-link">Visit Channel →</a>
+                        </div>
+                    </div>
+                    <div class="card glass-card channel-card">
+                        <div class="channel-icon" style="background:#ff6600;">C</div>
+                        <div class="channel-info">
+                            <h4>CareerRide</h4>
+                            <p>Aptitude, reasoning, and verbal ability video lessons</p>
+                            <a href="https://www.youtube.com/@caraboride" target="_blank" rel="noopener noreferrer" class="channel-link">Visit Channel →</a>
+                        </div>
+                    </div>
+                    <div class="card glass-card channel-card">
+                        <div class="channel-icon" style="background:#0077cc;">N</div>
+                        <div class="channel-info">
+                            <h4>Neso Academy</h4>
+                            <p>Computer Science fundamentals — OS, DBMS, Networks, Theory of Computation</p>
+                            <a href="https://www.youtube.com/@nesaboride" target="_blank" rel="noopener noreferrer" class="channel-link">Visit Channel →</a>
+                        </div>
+                    </div>
+                    <div class="card glass-card channel-card">
+                        <div class="channel-icon" style="background:#e91e63;">S</div>
+                        <div class="channel-info">
+                            <h4>Striver (take U forward)</h4>
+                            <p>Best DSA playlist, coding patterns, and competitive programming</p>
+                            <a href="https://www.youtube.com/@takeUforward" target="_blank" rel="noopener noreferrer" class="channel-link">Visit Channel →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Practice & Links -->
+            <div id="restab-links" class="res-content">
+                <h3 class="section-heading">🔗 Essential Practice Platforms</h3>
+                <div class="links-grid" id="linksGrid"></div>
+
+                <h3 class="section-heading">📚 Topic-wise Best Resources</h3>
+                <div class="resource-topic-grid" id="topicResourceGrid"></div>
+
+                <h3 class="section-heading">📄 Important Downloads & References</h3>
+                <div class="downloads-grid">
+                    <div class="card glass-card download-card">
+                        <div class="dl-icon"><i class="fas fa-file-pdf"></i></div>
+                        <h4>TCS NQT Syllabus 2026</h4>
+                        <p>Complete official syllabus with topic-wise weightage and marking scheme</p>
+                        <a href="https://learning.tcsionhub.in/hub/national-qualifier-test/" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+                            <i class="fas fa-external-link-alt"></i> Visit TCS iON
+                        </a>
+                    </div>
+                    <div class="card glass-card download-card">
+                        <div class="dl-icon"><i class="fas fa-book"></i></div>
+                        <h4>R.S. Aggarwal — Quant</h4>
+                        <p>Best book for quantitative aptitude — covers all TCS NQT patterns</p>
+                        <span class="book-tag">Must Read</span>
+                    </div>
+                    <div class="card glass-card download-card">
+                        <div class="dl-icon"><i class="fas fa-book"></i></div>
+                        <h4>Verbal & Non-Verbal Reasoning</h4>
+                        <p>R.S. Aggarwal — comprehensive logical reasoning reference</p>
+                        <span class="book-tag">Must Read</span>
+                    </div>
+                    <div class="card glass-card download-card">
+                        <div class="dl-icon"><i class="fas fa-book"></i></div>
+                        <h4>Word Power Made Easy</h4>
+                        <p>Norman Lewis — essential for vocabulary and verbal ability section</p>
+                        <span class="book-tag">Recommended</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Strategy & Tips -->
+            <div id="restab-strategy" class="res-content">
+                <div class="tips-grid">
+                    <div class="card glass-card tip-card">
+                        <h3>🎯 Preparation Strategy (7-Day Plan)</h3>
+                        <div class="day-plan">
+                            <div class="day"><div class="day-number">1-2</div><div class="day-content"><strong>Quantitative Aptitude</strong><br>Master key formulas, learn shortcuts. Practice 50+ problems on percentages, ratio, speed-distance, SI/CI, profit-loss.</div></div>
+                            <div class="day"><div class="day-number">3</div><div class="day-content"><strong>Logical Reasoning</strong><br>Pattern recognition, coding-decoding, number series, blood relations, syllogisms. Practice 30+ questions.</div></div>
+                            <div class="day"><div class="day-number">4</div><div class="day-content"><strong>Verbal Ability</strong><br>Grammar rules (articles, tenses, subject-verb), vocabulary (synonyms, antonyms), RC practice. Learn 50 new words.</div></div>
+                            <div class="day"><div class="day-number">5</div><div class="day-content"><strong>Programming Logic + DBMS</strong><br>Pseudocode tracing, output prediction, OOP concepts, SQL queries, normalization basics.</div></div>
+                            <div class="day"><div class="day-number">6</div><div class="day-content"><strong>Coding Practice + CS Fundamentals</strong><br>Solve 10-15 easy-medium problems in C/Java/Python. Review OS scheduling, network layers.</div></div>
+                            <div class="day"><div class="day-number">7</div><div class="day-content"><strong>Full Mock Test + Revision</strong><br>Take a full-length mock. Review all wrong answers. Revise formula sheet and key facts.</div></div>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card tip-card">
+                        <h3>⏱️ Time Management Tips</h3>
+                        <ul class="tip-list">
+                            <li><strong>No negative marking</strong> — attempt ALL questions, never leave blanks</li>
+                            <li><strong>Numerical:</strong> ~1.5 min/question. Skip if stuck beyond 2 min, return later</li>
+                            <li><strong>Verbal:</strong> Read questions first, then scan the passage for answers</li>
+                            <li><strong>Reasoning:</strong> Draw diagrams for seating & blood relations. Use elimination</li>
+                            <li><strong>Programming:</strong> Trace code line-by-line mentally, check edge cases</li>
+                            <li><strong>Coding:</strong> Think approach for 2 min before writing. Test with sample input</li>
+                            <li><strong>Section order:</strong> Start with your strongest section for confidence</li>
+                            <li><strong>Flag & return:</strong> Mark tough questions and come back in remaining time</li>
+                        </ul>
+                    </div>
+
+                    <div class="card glass-card tip-card">
+                        <h3>📐 Key Formulas Quick Reference</h3>
+                        <div class="formula-grid" id="formulaGrid"></div>
+                    </div>
+
+                    <div class="card glass-card tip-card">
+                        <h3>💡 Common Mistakes to Avoid</h3>
+                        <ul class="tip-list warning-list">
+                            <li>Don't spend too long on a single question — move on and return</li>
+                            <li>Don't skip questions — no negative marking means always attempt</li>
+                            <li>Don't ignore verbal section — it's high-scoring with practice</li>
+                            <li>Don't memorize code — understand logic and trace step by step</li>
+                            <li>Don't panic if coding section is hard — focus on partial marks</li>
+                            <li>Don't forget to check unit conversions (km/h ↔ m/s, hours ↔ min)</li>
+                            <li>Don't rely solely on shortcuts — understand the concept behind them</li>
+                            <li>Don't ignore the last 10 minutes — review flagged questions</li>
+                        </ul>
+                    </div>
+
+                    <div class="card glass-card tip-card span-2">
+                        <h3>🧠 Section-wise Pro Tips</h3>
+                        <div class="pro-tips-grid">
+                            <div class="pro-tip">
+                                <h4>🔢 Quantitative</h4>
+                                <ul>
+                                    <li>Learn tables up to 30, squares up to 25, cubes up to 15</li>
+                                    <li>Use approximation for complex calculations</li>
+                                    <li>For percentage questions, use base value method</li>
+                                    <li>Ratio problems: assume values to simplify</li>
+                                </ul>
+                            </div>
+                            <div class="pro-tip">
+                                <h4>🧩 Reasoning</h4>
+                                <ul>
+                                    <li>In series questions, check differences then ratios</li>
+                                    <li>For coding-decoding: map A=1, Z=26 immediately</li>
+                                    <li>Blood relations: draw family tree diagrams</li>
+                                    <li>Syllogisms: use Venn diagrams, not assumptions</li>
+                                </ul>
+                            </div>
+                            <div class="pro-tip">
+                                <h4>📝 Verbal</h4>
+                                <ul>
+                                    <li>Read 1 English article daily to improve comprehension</li>
+                                    <li>Focus on common confusables: affect/effect, its/it's</li>
+                                    <li>Para jumbles: find the intro sentence first (general → specific)</li>
+                                    <li>Cloze test: read full passage before filling blanks</li>
+                                </ul>
+                            </div>
+                            <div class="pro-tip">
+                                <h4>💻 Programming</h4>
+                                <ul>
+                                    <li>For pseudocode: track variables on paper step by step</li>
+                                    <li>Know Big-O of common algorithms and operations</li>
+                                    <li>Understand recursion by drawing call stacks</li>
+                                    <li>Practice output prediction for loops and conditionals</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Know TCS -->
+            <div id="restab-tcs-info" class="res-content">
+                <div class="card glass-card tcs-hero">
+                    <div class="tcs-hero-content">
+                        <h2>Tata Consultancy Services</h2>
+                        <p class="tcs-tagline">"Building on Belief"</p>
+                        <p class="tcs-desc">TCS is a global leader in IT services, consulting, and business solutions. Part of the Tata Group, it has been a pioneer in the Indian IT industry since 1968.</p>
+                    </div>
+                </div>
+
+                <div class="tcs-stats-row">
+                    <div class="card glass-card tcs-stat-card">
+                        <h3>₹2.71L Cr</h3>
+                        <p>Revenue (FY 2026)</p>
+                    </div>
+                    <div class="card glass-card tcs-stat-card">
+                        <h3>584,519</h3>
+                        <p>Employees (2026)</p>
+                    </div>
+                    <div class="card glass-card tcs-stat-card">
+                        <h3>150+</h3>
+                        <p>Locations Worldwide</p>
+                    </div>
+                    <div class="card glass-card tcs-stat-card">
+                        <h3>46</h3>
+                        <p>Countries</p>
+                    </div>
+                </div>
+
+                <div class="tcs-info-grid">
+                    <div class="card glass-card">
+                        <h3>🏢 Company Overview</h3>
+                        <div class="tcs-facts">
+                            <div class="fact"><strong>Founded:</strong> 1968 by J.R.D. Tata</div>
+                            <div class="fact"><strong>HQ:</strong> Mumbai, Maharashtra, India</div>
+                            <div class="fact"><strong>CEO:</strong> K. Krithivasan (since June 2023)</div>
+                            <div class="fact"><strong>Chairman:</strong> Natarajan Chandrasekaran</div>
+                            <div class="fact"><strong>Parent:</strong> Tata Group (Tata Sons owns 71.74%)</div>
+                            <div class="fact"><strong>Employees:</strong> 584,519 (March 2026)</div>
+                            <div class="fact"><strong>Revenue:</strong> ₹2,71,423 Cr / US$29 billion (FY 2026)</div>
+                            <div class="fact"><strong>Net Income:</strong> ₹49,454 Cr / US$5.2 billion (FY 2026)</div>
+                            <div class="fact"><strong>Subsidiaries:</strong> 51 subsidiary companies in 55 countries</div>
+                            <div class="fact"><strong>Key Products:</strong> TCS BaNCS, Ignio (AI), MasterCraft, Quartz (Blockchain), HOBS, OmniStore</div>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card">
+                        <h3>💰 Salary & Roles for Freshers</h3>
+                        <div class="salary-grid">
+                            <div class="salary-card ninja">
+                                <h4>Ninja</h4>
+                                <div class="salary-amount">₹3.36 LPA</div>
+                                <p>Foundation test qualifier</p>
+                                <ul><li>System Engineer role</li><li>Support & maintenance projects</li><li>Standard ILP training</li></ul>
+                            </div>
+                            <div class="salary-card digital">
+                                <h4>Digital</h4>
+                                <div class="salary-amount">₹7-9 LPA</div>
+                                <p>Advanced test qualifier</p>
+                                <ul><li>Digital Engineer role</li><li>Development & cloud projects</li><li>Extended ILP + specialization</li></ul>
+                            </div>
+                            <div class="salary-card prime">
+                                <h4>Prime</h4>
+                                <div class="salary-amount">₹9-11+ LPA</div>
+                                <p>Top scorers in Advanced</p>
+                                <ul><li>Digital Prime role</li><li>High-end tech projects</li><li>Premium ILP + mentorship</li></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card">
+                        <h3>🎓 ILP — Initial Learning Program</h3>
+                        <div class="ilp-info">
+                            <p>After joining, all freshers undergo TCS's <strong>Initial Learning Program (ILP)</strong> — a comprehensive training program conducted at TCS facilities.</p>
+                            <div class="ilp-details">
+                                <div class="ilp-item"><i class="fas fa-map-marker-alt"></i><strong>Location:</strong> Trivandrum (Kerala) — main ILP center</div>
+                                <div class="ilp-item"><i class="fas fa-calendar-alt"></i><strong>Duration:</strong> 45-60 days (Ninja) | 60-90 days (Digital)</div>
+                                <div class="ilp-item"><i class="fas fa-laptop-code"></i><strong>Covers:</strong> Java/Python, DBMS, OS, Networking, Agile, Cloud basics</div>
+                                <div class="ilp-item"><i class="fas fa-exclamation-triangle"></i><strong>Assessment:</strong> Must clear ILP exams to get confirmed</div>
+                                <div class="ilp-item"><i class="fas fa-home"></i><strong>Accommodation:</strong> Provided by TCS during ILP</div>
+                                <div class="ilp-item"><i class="fas fa-users"></i><strong>Stream Allocation:</strong> Based on ILP performance and business needs</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card">
+                        <h3>📋 TCS Hiring Process</h3>
+                        <div class="hiring-timeline">
+                            <div class="timeline-step"><div class="step-num">1</div><div class="step-content"><strong>Register on TCS NextStep</strong><br>Create profile on nextstep.tcs.com</div></div>
+                            <div class="timeline-step"><div class="step-num">2</div><div class="step-content"><strong>TCS NQT (Online Test)</strong><br>Foundation + Advanced sections</div></div>
+                            <div class="timeline-step"><div class="step-num">3</div><div class="step-content"><strong>Technical Interview</strong><br>CS fundamentals, coding, projects</div></div>
+                            <div class="timeline-step"><div class="step-num">4</div><div class="step-content"><strong>Managerial Interview</strong><br>Situational, problem-solving</div></div>
+                            <div class="timeline-step"><div class="step-num">5</div><div class="step-content"><strong>HR Interview</strong><br>Behavioral, salary, relocation</div></div>
+                            <div class="timeline-step"><div class="step-num">6</div><div class="step-content"><strong>Offer Letter</strong><br>Get your offer + join for ILP</div></div>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card">
+                        <h3>📜 TCS Leadership History</h3>
+                        <table class="exam-table compact">
+                            <thead><tr><th>CEO</th><th>Tenure</th></tr></thead>
+                            <tbody>
+                                <tr><td>F. C. Kohli</td><td>1968 – 1996</td></tr>
+                                <tr><td>S. Ramadorai</td><td>1996 – 2009</td></tr>
+                                <tr><td>N. Chandrasekaran</td><td>2009 – 2017</td></tr>
+                                <tr><td>Rajesh Gopinathan</td><td>2017 – 2023</td></tr>
+                                <tr class="highlight-row"><td>K. Krithivasan</td><td>2023 – Present</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card glass-card">
+                        <h3>🌍 TCS Key Milestones</h3>
+                        <div class="milestones-list">
+                            <div class="milestone"><span class="yr">1968</span> Founded as Tata Computer Systems</div>
+                            <div class="milestone"><span class="yr">2003</span> First Indian IT firm to reach $1B revenue</div>
+                            <div class="milestone"><span class="yr">2004</span> IPO on BSE — became publicly listed</div>
+                            <div class="milestone"><span class="yr">2014</span> First Indian company to cross ₹5 Lakh Cr market cap</div>
+                            <div class="milestone"><span class="yr">2020</span> Surpassed Accenture — world's most valuable IT company</div>
+                            <div class="milestone"><span class="yr">2021</span> First Indian IT firm at $200B market cap</div>
+                            <div class="milestone"><span class="yr">2021</span> Rebranded with "Building on Belief" tagline</div>
+                            <div class="milestone"><span class="yr">2023</span> K. Krithivasan appointed as new CEO</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress Page -->
+        <section id="page-progress" class="page">
+            <h2><i class="fas fa-chart-line"></i> My Progress</h2>
+            <div class="progress-overview">
+                <div class="card">
+                    <h3>📊 Overall Statistics</h3>
+                    <div class="progress-stats-grid" id="progressStatsGrid"></div>
+                </div>
+                <div class="card">
+                    <h3>📈 Performance Over Time</h3>
+                    <div class="chart-container" id="performanceChart"></div>
+                </div>
+                <div class="card">
+                    <h3>🎯 Topic Mastery</h3>
+                    <div id="topicMastery" class="mastery-grid"></div>
+                </div>
+                <div class="card">
+                    <h3>📝 Test History</h3>
+                    <div id="testHistory" class="test-history-table"></div>
+                </div>
+            </div>
+            <div class="progress-actions">
+                <button class="btn btn-danger" onclick="confirmResetProgress()">
+                    <i class="fas fa-trash"></i> Reset All Progress
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <script src="questions-data.js"></script>
+    <script src="study-data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
