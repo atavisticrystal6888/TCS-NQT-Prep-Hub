@@ -78,6 +78,11 @@ const STUDY_MATERIALS = {
 <li><strong>Pipes & Cisterns:</strong> Same as work problems
   <br>• Fill pipe: positive rate (+1/a)
   <br>• Drain pipe: negative rate (-1/b)</li>
+</ul>
+<h4>Worked Examples</h4>
+<ul>
+<li>A: 10 days, B: 15 days → Together = 10×15/(10+15) = 6 days</li>
+<li>A: 12 days, B: 18 days, C: 36 days → Combined rate = 1/12 + 1/18 + 1/36 = 6/36 = 1/6 → 6 days</li>
 </ul>`
             },
             {
@@ -89,6 +94,94 @@ const STUDY_MATERIALS = {
 <li><strong>CI</strong>: A = P(1 + R/100)^T, CI = A - P</li>
 <li>Difference (CI - SI) for 2 years = P(R/100)²</li>
 <li>Effective rate for CI (2 years) = 2R + R²/100</li>
+</ul>`
+            },
+            {
+                heading: "Ratio, Proportion & Mixtures",
+                content: `
+<h4>Ratio & Proportion</h4>
+<ul>
+<li>A:B = a:b means A/B = a/b → A = ka, B = kb</li>
+<li>Duplicate ratio of a:b = a²:b²</li>
+<li>Sub-duplicate ratio of a:b = √a : √b</li>
+<li>Compound ratio of a:b and c:d = ac:bd</li>
+<li>If A:B = 2:3 and B:C = 4:5 → Make B common → A:B:C = 8:12:15</li>
+</ul>
+<h4>Alligation & Mixtures</h4>
+<ul>
+<li>Alligation Rule: Ratio = (Dearer − Mean) : (Mean − Cheaper)</li>
+<li>Replacement: After n operations, pure = V × (1 − x/V)^n</li>
+<li>Example: 20L milk, 4L replaced each time, after 3 times → 20 × (16/20)³ = 10.24L pure milk</li>
+</ul>`
+            },
+            {
+                heading: "Permutation, Combination & Probability",
+                content: `
+<h4>Permutations (Order matters)</h4>
+<ul>
+<li>nPr = n! / (n−r)!</li>
+<li>Circular permutation = (n−1)!</li>
+<li>Arrangements with repetition: n!/(p!×q!) for p identical, q identical items</li>
+</ul>
+<h4>Combinations (Order doesn't matter)</h4>
+<ul>
+<li>nCr = n! / [r!(n−r)!]</li>
+<li>nC0 = nCn = 1, nC1 = n</li>
+<li>nCr = nC(n−r)</li>
+</ul>
+<h4>Probability</h4>
+<ul>
+<li>P(E) = Favorable outcomes / Total outcomes (0 ≤ P ≤ 1)</li>
+<li>P(A or B) = P(A) + P(B) − P(A∩B)</li>
+<li>P(A and B) = P(A) × P(B) [if independent]</li>
+<li>P(not A) = 1 − P(A)</li>
+<li>Dice: P(any face) = 1/6. Two dice: total outcomes = 36</li>
+<li>Cards: P(King) = 4/52 = 1/13. P(Red) = 26/52 = 1/2</li>
+</ul>`
+            },
+            {
+                heading: "Geometry & Mensuration",
+                content: `
+<h4>2D Shapes</h4>
+<ul>
+<li><strong>Circle:</strong> Area = πr², Circumference = 2πr</li>
+<li><strong>Triangle:</strong> Area = ½bh, Heron's = √[s(s−a)(s−b)(s−c)] where s=(a+b+c)/2</li>
+<li><strong>Equilateral Triangle:</strong> Area = (√3/4)a², Height = (√3/2)a</li>
+<li><strong>Rectangle:</strong> Area = l×b, Diagonal = √(l²+b²)</li>
+<li><strong>Square:</strong> Area = a², Diagonal = a√2</li>
+<li><strong>Trapezium:</strong> Area = ½(a+b)×h</li>
+<li><strong>Rhombus:</strong> Area = ½×d₁×d₂</li>
+</ul>
+<h4>3D Solids</h4>
+<ul>
+<li><strong>Cube:</strong> Volume = a³, TSA = 6a², Diagonal = a√3</li>
+<li><strong>Cuboid:</strong> Volume = l×b×h, TSA = 2(lb+bh+lh), Diagonal = √(l²+b²+h²)</li>
+<li><strong>Cylinder:</strong> Volume = πr²h, CSA = 2πrh, TSA = 2πr(r+h)</li>
+<li><strong>Cone:</strong> Volume = ⅓πr²h, Slant = √(r²+h²), CSA = πrl</li>
+<li><strong>Sphere:</strong> Volume = 4/3πr³, SA = 4πr²</li>
+<li><strong>Hemisphere:</strong> Volume = 2/3πr³, TSA = 3πr²</li>
+</ul>`
+            },
+            {
+                heading: "Number Properties & Algebra",
+                content: `
+<h4>Useful Algebraic Identities</h4>
+<ul>
+<li>(a+b)² = a² + 2ab + b²</li>
+<li>(a−b)² = a² − 2ab + b²</li>
+<li>a² − b² = (a+b)(a−b)</li>
+<li>(a+b)³ = a³ + 3a²b + 3ab² + b³</li>
+<li>a³ + b³ = (a+b)(a²−ab+b²)</li>
+<li>a³ − b³ = (a−b)(a²+ab+b²)</li>
+</ul>
+<h4>Number Properties</h4>
+<ul>
+<li>Sum of first n natural numbers = n(n+1)/2</li>
+<li>Sum of first n squares = n(n+1)(2n+1)/6</li>
+<li>Sum of first n cubes = [n(n+1)/2]²</li>
+<li>Number of factors of N = product of (exponent+1) for each prime factor</li>
+<li>Euler's totient φ(n) = n × ∏(1 − 1/p) for each prime p dividing n</li>
+<li>Remainder theorem: f(a) gives remainder when f(x) is divided by (x−a)</li>
 </ul>`
             }
         ]
@@ -154,6 +247,78 @@ const STUDY_MATERIALS = {
 </ul>
 <h4>Strategy: Venn Diagrams</h4>
 <p>Draw circles for each category. Use ALL possible valid diagrams. A conclusion is true only if it holds in ALL valid diagrams.</p>`
+            },
+            {
+                heading: "Direction Sense & Distance",
+                content: `
+<h4>Key Points</h4>
+<ul>
+<li>Draw starting point, then trace each turn and distance</li>
+<li>Compass: North (up), South (down), East (right), West (left)</li>
+<li>Right turn from North → East → South → West → North</li>
+<li>Left turn from North → West → South → East → North</li>
+<li>Final distance: Use Pythagorean theorem √(x² + y²)</li>
+</ul>
+<h4>Common Tricks</h4>
+<ul>
+<li>"Opposite direction" → add 180°</li>
+<li>Shadow-based: Morning → West side shadow, Evening → East side</li>
+<li>If facing sunrise → facing East</li>
+</ul>`
+            },
+            {
+                heading: "Clocks & Calendars",
+                content: `
+<h4>Clock Problems</h4>
+<ul>
+<li>Hour hand speed: 0.5°/minute (360° in 12 hrs)</li>
+<li>Minute hand speed: 6°/minute (360° in 60 min)</li>
+<li>Relative speed: 5.5°/minute</li>
+<li>Angle at h:m = |30h − 5.5m|° (if > 180°, use 360° − angle)</li>
+<li>Hands overlap 11 times in 12 hours (not 12!)</li>
+<li>Hands at right angle (90°): 22 times in 12 hours</li>
+</ul>
+<h4>Calendar</h4>
+<ul>
+<li>Odd days: Mon=1, Tue=2 … Sun=0</li>
+<li>Normal year = 1 odd day, Leap year = 2 odd days</li>
+<li>Leap year: divisible by 4 (but NOT 100, unless also 400)</li>
+<li>100 years = 5 odd days, 200 yrs = 3, 300 yrs = 1, 400 yrs = 0</li>
+</ul>`
+            },
+            {
+                heading: "Seating Arrangement",
+                content: `
+<h4>Types</h4>
+<ul>
+<li><strong>Linear (row):</strong> People in a line, face same/opposite direction</li>
+<li><strong>Circular:</strong> People around a table, clockwise/anti-clockwise</li>
+<li><strong>Floor/Building:</strong> People on different floors (bottom = 1)</li>
+</ul>
+<h4>Strategy</h4>
+<ul>
+<li>Read ALL clues first. Identify fixed/definite positions first.</li>
+<li>"Immediate left/right" = adjacent; "left/right" could be any position on that side</li>
+<li>In circular: "to the left" = counter-clockwise; "to the right" = clockwise</li>
+<li>Make multiple cases if needed, then eliminate with further clues</li>
+</ul>`
+            },
+            {
+                heading: "Data Interpretation Basics",
+                content: `
+<h4>Types of Charts</h4>
+<ul>
+<li><strong>Bar Graph:</strong> Compare quantities — read values carefully</li>
+<li><strong>Pie Chart:</strong> Central angle = (value/total)×360°. Percentage = (angle/360)×100</li>
+<li><strong>Line Graph:</strong> Track trends. Look at slope for rate of change</li>
+<li><strong>Table:</strong> Direct data — calculate ratio, percentage, average</li>
+</ul>
+<h4>Quick Calculation Tips</h4>
+<ul>
+<li>10% → divide by 10; 5% → half of 10%; 1% → divide by 100</li>
+<li>12.5% = 1/8; 16.67% = 1/6; 33.33% = 1/3; 25% = 1/4</li>
+<li>Approximate to nearest whole numbers for quick comparison</li>
+</ul>`
             }
         ]
     },
@@ -214,6 +379,79 @@ const STUDY_MATERIALS = {
 <li><strong>Spill the beans:</strong> Reveal a secret</li>
 <li><strong>Barking up the wrong tree:</strong> Looking in the wrong place</li>
 <li><strong>The ball is in your court:</strong> It's your decision/turn</li>
+<li><strong>A blessing in disguise:</strong> Good thing that initially seemed bad</li>
+<li><strong>Beat around the bush:</strong> Avoid saying directly</li>
+<li><strong>Better late than never:</strong> Preferable to do late than not at all</li>
+<li><strong>Call it a day:</strong> Stop working</li>
+<li><strong>Get out of hand:</strong> Get out of control</li>
+<li><strong>Kill two birds with one stone:</strong> Accomplish two things at once</li>
+<li><strong>Let the cat out of the bag:</strong> Reveal a secret accidentally</li>
+<li><strong>Miss the boat:</strong> Miss an opportunity</li>
+</ul>`
+            },
+            {
+                heading: "One Word Substitutions",
+                content: `
+<table class="vocab-table">
+<tr><th>Phrase</th><th>One Word</th></tr>
+<tr><td>One who loves mankind</td><td>Philanthropist</td></tr>
+<tr><td>One who hates mankind</td><td>Misanthrope</td></tr>
+<tr><td>One who can speak two languages</td><td>Bilingual</td></tr>
+<tr><td>Government by the people</td><td>Democracy</td></tr>
+<tr><td>Government by a king/queen</td><td>Monarchy</td></tr>
+<tr><td>A person who walks on foot</td><td>Pedestrian</td></tr>
+<tr><td>Killing of one's own father</td><td>Patricide</td></tr>
+<tr><td>That which cannot be read</td><td>Illegible</td></tr>
+<tr><td>One who knows everything</td><td>Omniscient</td></tr>
+<tr><td>One who is present everywhere</td><td>Omnipresent</td></tr>
+<tr><td>Something that cannot be corrected</td><td>Incorrigible</td></tr>
+<tr><td>A word no longer in use</td><td>Obsolete</td></tr>
+<tr><td>A brief summary of a book</td><td>Synopsis</td></tr>
+<tr><td>The study of human mind</td><td>Psychology</td></tr>
+<tr><td>A person who collects stamps</td><td>Philatelist</td></tr>
+</table>`
+            },
+            {
+                heading: "Reading Comprehension Strategy",
+                content: `
+<h4>Approach</h4>
+<ul>
+<li><strong>Step 1:</strong> Skim the passage quickly (1 minute) — get the main idea</li>
+<li><strong>Step 2:</strong> Read the questions BEFORE deep reading</li>
+<li><strong>Step 3:</strong> Re-read passage looking for specific answers</li>
+<li><strong>Step 4:</strong> Answers are usually in the passage — don't use outside knowledge</li>
+</ul>
+<h4>Question Types</h4>
+<ul>
+<li><strong>Main idea:</strong> What is the passage about? (Read first & last paragraphs)</li>
+<li><strong>Detail-based:</strong> Look for specific words from the question in the passage</li>
+<li><strong>Inference:</strong> What can be concluded? (Not directly stated but implied)</li>
+<li><strong>Tone/Attitude:</strong> Author's viewpoint (positive, negative, neutral, critical)</li>
+<li><strong>Vocabulary:</strong> Meaning in context — look at surrounding sentences</li>
+</ul>
+<h4>Time Management</h4>
+<p>Allocate 3-4 minutes per RC set (passage + 4-5 questions). Don't spend more than 5 minutes on one passage.</p>`
+            },
+            {
+                heading: "Sentence Arrangement & Error Spotting",
+                content: `
+<h4>Para Jumbles (Sentence Arrangement)</h4>
+<ul>
+<li>Find the opening sentence (introduces topic, no pronoun references)</li>
+<li>Look for link words: "however", "moreover", "therefore", "hence"</li>
+<li>Pronouns (he, she, it, they) must refer to previously mentioned nouns</li>
+<li>Time/chronological order clues</li>
+<li>Try to form pairs first, then arrange</li>
+</ul>
+<h4>Error Spotting Checklist</h4>
+<ul>
+<li>Subject-verb agreement (singular/plural)</li>
+<li>Tense consistency</li>
+<li>Preposition errors (interested in, consist of, depend on)</li>
+<li>Article usage (a/an/the)</li>
+<li>Pronoun errors (who vs whom, their vs there)</li>
+<li>Redundancy (return back → return, revert back → revert)</li>
+<li>Parallelism (list items should be same form)</li>
 </ul>`
             }
         ]
@@ -274,6 +512,86 @@ const STUDY_MATERIALS = {
 </ul>
 <h4>Strategy</h4>
 <p>Create a trace table with columns for each variable. Execute line by line. Don't skip steps.</p>`
+            },
+            {
+                heading: "Sorting Algorithms Comparison",
+                content: `
+<table class="vocab-table">
+<tr><th>Algorithm</th><th>Best</th><th>Average</th><th>Worst</th><th>Space</th><th>Stable?</th></tr>
+<tr><td>Bubble Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>Yes</td></tr>
+<tr><td>Selection Sort</td><td>O(n²)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>No</td></tr>
+<tr><td>Insertion Sort</td><td>O(n)</td><td>O(n²)</td><td>O(n²)</td><td>O(1)</td><td>Yes</td></tr>
+<tr><td>Merge Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n)</td><td>Yes</td></tr>
+<tr><td>Quick Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n²)</td><td>O(log n)</td><td>No</td></tr>
+<tr><td>Heap Sort</td><td>O(n log n)</td><td>O(n log n)</td><td>O(n log n)</td><td>O(1)</td><td>No</td></tr>
+<tr><td>Counting Sort</td><td>O(n+k)</td><td>O(n+k)</td><td>O(n+k)</td><td>O(k)</td><td>Yes</td></tr>
+</table>
+<h4>Key Insights</h4>
+<ul>
+<li>Merge Sort: Guaranteed O(n log n), needs extra space → good for linked lists</li>
+<li>Quick Sort: Best practical performance, O(n²) worst with poor pivot → use randomized pivot</li>
+<li>Insertion Sort: Best for nearly sorted data, adaptive</li>
+<li>Stable sort: Preserves relative order of equal elements</li>
+</ul>`
+            },
+            {
+                heading: "Data Structures Quick Reference",
+                content: `
+<table class="vocab-table">
+<tr><th>Structure</th><th>Access</th><th>Search</th><th>Insert</th><th>Delete</th></tr>
+<tr><td>Array</td><td>O(1)</td><td>O(n)</td><td>O(n)</td><td>O(n)</td></tr>
+<tr><td>Linked List</td><td>O(n)</td><td>O(n)</td><td>O(1)*</td><td>O(1)*</td></tr>
+<tr><td>Stack</td><td>O(n)</td><td>O(n)</td><td>O(1)</td><td>O(1)</td></tr>
+<tr><td>Queue</td><td>O(n)</td><td>O(n)</td><td>O(1)</td><td>O(1)</td></tr>
+<tr><td>Hash Table</td><td>—</td><td>O(1) avg</td><td>O(1) avg</td><td>O(1) avg</td></tr>
+<tr><td>BST</td><td>O(log n)</td><td>O(log n)</td><td>O(log n)</td><td>O(log n)</td></tr>
+<tr><td>Heap</td><td>O(1) max</td><td>O(n)</td><td>O(log n)</td><td>O(log n)</td></tr>
+</table>
+<p style="font-size:0.8em;">* at known position. BST times are for balanced trees.</p>`
+            },
+            {
+                heading: "Recursion & Important Patterns",
+                content: `
+<h4>Recursion Structure</h4>
+<ul>
+<li><strong>Base case:</strong> When to stop (prevents infinite recursion)</li>
+<li><strong>Recursive case:</strong> Function calls itself with simpler input</li>
+<li><strong>Stack overflow:</strong> Too many recursive calls without reaching base case</li>
+</ul>
+<h4>Classic Examples</h4>
+<pre><code>// Factorial
+fact(n) = n == 0 ? 1 : n * fact(n-1)
+
+// Fibonacci
+fib(n) = n <= 1 ? n : fib(n-1) + fib(n-2)
+
+// Power
+power(x, n) = n == 0 ? 1 : x * power(x, n-1)
+
+// Tower of Hanoi (2^n - 1 moves)
+hanoi(n, from, to, aux)</code></pre>
+<h4>Tail Recursion</h4>
+<p>Recursive call is the last operation → can be optimized to iteration by compilers. Example: <code>f(n, acc)</code> pattern.</p>`
+            },
+            {
+                heading: "Bitwise Operations",
+                content: `
+<h4>Operators</h4>
+<ul>
+<li><strong>& (AND):</strong> 1 only if both bits are 1 → used for masking</li>
+<li><strong>| (OR):</strong> 1 if at least one bit is 1 → used for setting bits</li>
+<li><strong>^ (XOR):</strong> 1 if bits differ → swap without temp: a^=b; b^=a; a^=b;</li>
+<li><strong>~ (NOT):</strong> Flips all bits → ~x = -(x+1)</li>
+<li><strong>&lt;&lt; (Left shift):</strong> x << n = x × 2ⁿ</li>
+<li><strong>&gt;&gt; (Right shift):</strong> x >> n = x ÷ 2ⁿ</li>
+</ul>
+<h4>Tricks</h4>
+<ul>
+<li>Check even/odd: (n & 1) == 0 → even</li>
+<li>Check power of 2: n > 0 && (n & (n-1)) == 0</li>
+<li>Count set bits: Brian Kernighan's — n = n & (n-1) in loop, count iterations</li>
+<li>Swap two numbers: a ^= b; b ^= a; a ^= b;</li>
+</ul>`
             }
         ]
     },
@@ -338,6 +656,78 @@ INNER JOIN departments d ON e.dept_id = d.id;</code></pre>`
 <li><strong>Isolation:</strong> Concurrent transactions don't interfere</li>
 <li><strong>Durability:</strong> Committed data persists even after crash</li>
 </ul>`
+            },
+            {
+                heading: "SQL Joins & Subqueries",
+                content: `
+<h4>Types of Joins</h4>
+<ul>
+<li><strong>INNER JOIN:</strong> Only matching rows from both tables</li>
+<li><strong>LEFT JOIN:</strong> All rows from left table + matching from right (NULL if no match)</li>
+<li><strong>RIGHT JOIN:</strong> All rows from right table + matching from left</li>
+<li><strong>FULL OUTER JOIN:</strong> All rows from both tables (NULL where no match)</li>
+<li><strong>CROSS JOIN:</strong> Cartesian product (every row × every row)</li>
+<li><strong>SELF JOIN:</strong> Table joined with itself (e.g., employee-manager)</li>
+</ul>
+<h4>Subqueries</h4>
+<pre><code>-- Correlated subquery
+SELECT e.name FROM emp e
+WHERE e.salary > (SELECT AVG(salary) FROM emp
+                  WHERE dept = e.dept);
+
+-- IN subquery
+SELECT name FROM emp
+WHERE dept_id IN (SELECT id FROM dept WHERE city='Mumbai');
+
+-- EXISTS subquery
+SELECT name FROM emp e
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.emp_id = e.id);</code></pre>`
+            },
+            {
+                heading: "Aggregate Functions & Window Functions",
+                content: `
+<h4>Aggregate Functions</h4>
+<ul>
+<li><strong>COUNT(*):</strong> Number of rows</li>
+<li><strong>SUM(col):</strong> Total of column values</li>
+<li><strong>AVG(col):</strong> Average value</li>
+<li><strong>MAX(col) / MIN(col):</strong> Maximum / Minimum</li>
+<li><strong>GROUP BY:</strong> Group rows for aggregate calculation</li>
+<li><strong>HAVING:</strong> Filter groups (like WHERE but for groups)</li>
+</ul>
+<h4>Window Functions (Advanced)</h4>
+<pre><code>-- Rank employees by salary within department
+SELECT name, dept, salary,
+  ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) as rn,
+  RANK() OVER (ORDER BY salary DESC) as rnk,
+  DENSE_RANK() OVER (ORDER BY salary DESC) as dense_rnk
+FROM emp;
+
+-- Running total
+SELECT name, salary,
+  SUM(salary) OVER (ORDER BY hire_date) as running_total
+FROM emp;</code></pre>`
+            },
+            {
+                heading: "ER Model & Relational Algebra",
+                content: `
+<h4>ER Diagram Components</h4>
+<ul>
+<li><strong>Entity:</strong> Rectangle — object/thing (Student, Employee)</li>
+<li><strong>Attribute:</strong> Oval — property of entity (Name, Age)</li>
+<li><strong>Relationship:</strong> Diamond — association between entities (enrolls, works_for)</li>
+<li><strong>Cardinality:</strong> 1:1, 1:N, M:N</li>
+<li><strong>Weak Entity:</strong> Double rectangle — depends on strong entity for identification</li>
+</ul>
+<h4>Relational Algebra Operations</h4>
+<ul>
+<li><strong>σ (Selection):</strong> Filter rows (like WHERE)</li>
+<li><strong>π (Projection):</strong> Select columns (like SELECT col1, col2)</li>
+<li><strong>⋈ (Join):</strong> Combine tables on condition</li>
+<li><strong>∪ (Union):</strong> Combine results (same schema)</li>
+<li><strong>− (Difference):</strong> Rows in R1 but not in R2</li>
+<li><strong>× (Cross product):</strong> Cartesian product</li>
+</ul>`
             }
         ]
     },
@@ -397,6 +787,47 @@ INNER JOIN departments d ON e.dept_id = d.id;</code></pre>`
 <li><strong>Detection:</strong> Wait-for graph, then recovery</li>
 <li><strong>Ignorance:</strong> Ostrich algorithm (just restart)</li>
 </ul>`
+            },
+            {
+                heading: "File Systems & Disk Scheduling",
+                content: `
+<h4>File Allocation Methods</h4>
+<ul>
+<li><strong>Contiguous:</strong> Blocks stored together. Fast sequential access. External fragmentation.</li>
+<li><strong>Linked:</strong> Each block points to next. No fragmentation. Slow random access.</li>
+<li><strong>Indexed:</strong> Index block holds all pointers. Fast access. Overhead of index block.</li>
+</ul>
+<h4>Disk Scheduling Algorithms</h4>
+<ul>
+<li><strong>FCFS:</strong> Process requests in order. Simple but inefficient.</li>
+<li><strong>SSTF:</strong> Shortest Seek Time First. Better than FCFS but can cause starvation.</li>
+<li><strong>SCAN (Elevator):</strong> Move in one direction, then reverse. Fair distribution.</li>
+<li><strong>C-SCAN:</strong> Circular SCAN — jumps back to start after reaching end.</li>
+<li><strong>LOOK/C-LOOK:</strong> Like SCAN but reverses at last request, not disk end.</li>
+</ul>`
+            },
+            {
+                heading: "Synchronization",
+                content: `
+<h4>Critical Section Problem</h4>
+<ul>
+<li><strong>Mutual Exclusion:</strong> Only one process in critical section at a time</li>
+<li><strong>Progress:</strong> No process outside should block others from entering</li>
+<li><strong>Bounded Waiting:</strong> Limit on how long a process waits</li>
+</ul>
+<h4>Solutions</h4>
+<ul>
+<li><strong>Mutex:</strong> Lock/unlock mechanism. Binary (0 or 1). One owner.</li>
+<li><strong>Semaphore:</strong> Counting mechanism. wait(S) decrements, signal(S) increments.</li>
+<li><strong>Binary Semaphore:</strong> Like mutex but no ownership concept.</li>
+<li><strong>Monitor:</strong> High-level synchronization. Only one process active inside monitor.</li>
+</ul>
+<h4>Classic Problems</h4>
+<ul>
+<li>Producer-Consumer (Bounded Buffer)</li>
+<li>Readers-Writers Problem</li>
+<li>Dining Philosophers Problem</li>
+</ul>`
             }
         ]
     },
@@ -438,6 +869,51 @@ INNER JOIN departments d ON e.dept_id = d.id;</code></pre>`
 <li>HTTP: Port 80, plaintext, no encryption</li>
 <li>HTTPS: Port 443, TLS/SSL encrypted, certificate-based auth</li>
 </ul>`
+            },
+            {
+                heading: "IP Addressing & Subnetting",
+                content: `
+<h4>IPv4 Classes</h4>
+<table class="vocab-table">
+<tr><th>Class</th><th>Range</th><th>Default Mask</th><th>Networks</th><th>Hosts/Network</th></tr>
+<tr><td>A</td><td>1.0.0.0 – 126.x.x.x</td><td>255.0.0.0 (/8)</td><td>126</td><td>16M</td></tr>
+<tr><td>B</td><td>128.0.0.0 – 191.x.x.x</td><td>255.255.0.0 (/16)</td><td>16K</td><td>65K</td></tr>
+<tr><td>C</td><td>192.0.0.0 – 223.x.x.x</td><td>255.255.255.0 (/24)</td><td>2M</td><td>254</td></tr>
+<tr><td>D</td><td>224.0.0.0 – 239.x.x.x</td><td>—</td><td colspan="2">Multicast</td></tr>
+<tr><td>E</td><td>240.0.0.0 – 255.x.x.x</td><td>—</td><td colspan="2">Reserved</td></tr>
+</table>
+<h4>Subnetting</h4>
+<ul>
+<li>Number of subnets = 2^(subnet bits)</li>
+<li>Hosts per subnet = 2^(host bits) − 2 (subtract network & broadcast)</li>
+<li>Example: /26 mask → 2 borrowed bits from /24 → 4 subnets, 62 hosts each</li>
+</ul>
+<h4>Private IP Ranges</h4>
+<ul>
+<li>10.0.0.0/8 (Class A)</li>
+<li>172.16.0.0/12 (Class B)</li>
+<li>192.168.0.0/16 (Class C)</li>
+</ul>`
+            },
+            {
+                heading: "Important Protocols & Port Numbers",
+                content: `
+<table class="vocab-table">
+<tr><th>Protocol</th><th>Port</th><th>Purpose</th></tr>
+<tr><td>HTTP</td><td>80</td><td>Web pages (unencrypted)</td></tr>
+<tr><td>HTTPS</td><td>443</td><td>Secure web pages</td></tr>
+<tr><td>FTP</td><td>20, 21</td><td>File transfer (data, control)</td></tr>
+<tr><td>SSH</td><td>22</td><td>Secure shell / remote login</td></tr>
+<tr><td>Telnet</td><td>23</td><td>Remote login (unencrypted)</td></tr>
+<tr><td>SMTP</td><td>25</td><td>Send email</td></tr>
+<tr><td>DNS</td><td>53</td><td>Domain name resolution</td></tr>
+<tr><td>DHCP</td><td>67, 68</td><td>Automatic IP assignment</td></tr>
+<tr><td>POP3</td><td>110</td><td>Receive email</td></tr>
+<tr><td>IMAP</td><td>143</td><td>Receive email (synced)</td></tr>
+<tr><td>MySQL</td><td>3306</td><td>Database server</td></tr>
+</table>
+<h4>DNS Resolution Process</h4>
+<p>Browser Cache → OS Cache → Router Cache → ISP DNS → Root DNS → TLD DNS → Authoritative DNS → IP returned</p>`
             }
         ]
     },

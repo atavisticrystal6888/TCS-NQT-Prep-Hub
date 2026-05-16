@@ -42,6 +42,12 @@
             <li data-page="progress">
                 <i class="fas fa-chart-line"></i><span>My Progress</span>
             </li>
+            <li data-page="notes">
+                <i class="fas fa-sticky-note"></i><span>My Notes</span>
+            </li>
+            <li data-page="bookmarks">
+                <i class="fas fa-bookmark"></i><span>Bookmarks</span>
+            </li>
         </ul>
         <div class="sidebar-footer">
             <div class="exam-countdown" id="examCountdown">
@@ -62,6 +68,10 @@
                 <h2 id="pageTitle">Dashboard</h2>
             </div>
             <div class="top-bar-right">
+                <div class="pomodoro-mini" id="pomodoroMini" onclick="navigateTo('notes')" title="Study Timer">
+                    <i class="fas fa-stopwatch"></i>
+                    <span id="pomodoroMiniDisplay">25:00</span>
+                </div>
                 <div class="streak-badge" id="streakBadge">
                     <i class="fas fa-fire"></i>
                     <span id="streakCount">0</span> day streak
@@ -217,6 +227,9 @@
                     <div class="quiz-info">
                         <span class="q-counter">Question <span id="qCurrent">1</span> of <span id="qTotal">25</span></span>
                         <span class="q-topic-badge" id="qTopicBadge">Quantitative</span>
+                        <button class="bookmark-btn" id="bookmarkBtn" onclick="toggleBookmarkQuestion()" title="Bookmark this question">
+                            <i class="far fa-bookmark" id="bookmarkIcon"></i>
+                        </button>
                     </div>
                     <div class="quiz-timer" id="quizTimer">
                         <i class="fas fa-clock"></i> <span id="timerDisplay">30:00</span>
@@ -842,7 +855,161 @@
                 </button>
             </div>
         </section>
+
+        <!-- Notes Page -->
+        <section id="page-notes" class="page">
+            <div class="notes-header">
+                <h2><i class="fas fa-sticky-note"></i> My Notes & Study Timer</h2>
+            </div>
+
+            <!-- Pomodoro Timer -->
+            <div class="card glass-card pomodoro-card">
+                <h3><i class="fas fa-stopwatch"></i> Pomodoro Study Timer</h3>
+                <p class="pomodoro-desc">Use the Pomodoro technique: 25 min focus → 5 min break. After 4 rounds, take a 15 min break.</p>
+                <div class="pomodoro-display">
+                    <div class="pomodoro-circle">
+                        <svg viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" stroke="var(--border)" stroke-width="6" fill="none"/>
+                            <circle id="pomodoroArc" cx="60" cy="60" r="54" stroke="var(--primary)" stroke-width="6" fill="none"
+                                stroke-dasharray="339.292" stroke-dashoffset="0" stroke-linecap="round"
+                                transform="rotate(-90 60 60)"/>
+                        </svg>
+                        <div class="pomodoro-time">
+                            <span id="pomodoroDisplay">25:00</span>
+                            <small id="pomodoroLabel">Focus</small>
+                        </div>
+                    </div>
+                    <div class="pomodoro-controls">
+                        <button class="btn btn-primary" id="pomodoroStartBtn" onclick="togglePomodoro()">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetPomodoro()">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                        <div class="pomodoro-rounds">
+                            <span id="pomodoroRounds">Round 1/4</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pomodoro-settings">
+                    <label>Focus: <input type="number" id="focusDuration" value="25" min="1" max="60" onchange="updatePomodoroSettings()"> min</label>
+                    <label>Break: <input type="number" id="breakDuration" value="5" min="1" max="30" onchange="updatePomodoroSettings()"> min</label>
+                    <label>Long Break: <input type="number" id="longBreakDuration" value="15" min="1" max="60" onchange="updatePomodoroSettings()"> min</label>
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="card notes-editor-card">
+                <div class="notes-toolbar">
+                    <h3><i class="fas fa-edit"></i> Quick Notes</h3>
+                    <div class="notes-actions">
+                        <select id="noteCategory" class="note-select">
+                            <option value="general">📝 General</option>
+                            <option value="quantitative">🔢 Quantitative</option>
+                            <option value="verbal">📝 Verbal</option>
+                            <option value="reasoning">🧩 Reasoning</option>
+                            <option value="programming">💻 Programming</option>
+                            <option value="formulas">📐 Formulas</option>
+                            <option value="mistakes">⚠️ Mistakes to Avoid</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="saveNote()">
+                            <i class="fas fa-save"></i> Save Note
+                        </button>
+                    </div>
+                </div>
+                <input type="text" id="noteTitle" class="note-title-input" placeholder="Note title...">
+                <textarea id="noteContent" class="note-textarea" placeholder="Write your notes here... Tip: Use this to jot down formulas, shortcuts, or mistakes you want to remember." rows="6"></textarea>
+            </div>
+
+            <!-- Saved Notes List -->
+            <div class="card">
+                <div class="notes-list-header">
+                    <h3><i class="fas fa-list"></i> Saved Notes</h3>
+                    <div class="notes-filter">
+                        <select id="noteFilterCategory" onchange="renderNotesList()">
+                            <option value="all">All Categories</option>
+                            <option value="general">📝 General</option>
+                            <option value="quantitative">🔢 Quantitative</option>
+                            <option value="verbal">📝 Verbal</option>
+                            <option value="reasoning">🧩 Reasoning</option>
+                            <option value="programming">💻 Programming</option>
+                            <option value="formulas">📐 Formulas</option>
+                            <option value="mistakes">⚠️ Mistakes</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="notesList" class="notes-list">
+                    <p class="empty-state">No notes yet. Start writing!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bookmarks Page -->
+        <section id="page-bookmarks" class="page">
+            <div class="bookmarks-header">
+                <h2><i class="fas fa-bookmark"></i> Bookmarked Questions</h2>
+                <p>Questions you've saved for revision. Review them before the exam!</p>
+            </div>
+
+            <div class="bookmark-filters">
+                <button class="bm-filter active" data-bmfilter="all" onclick="filterBookmarks('all')">All</button>
+                <button class="bm-filter" data-bmfilter="quantitative" onclick="filterBookmarks('quantitative')">🔢 Quant</button>
+                <button class="bm-filter" data-bmfilter="logical" onclick="filterBookmarks('logical')">🧩 Reasoning</button>
+                <button class="bm-filter" data-bmfilter="verbal" onclick="filterBookmarks('verbal')">📝 Verbal</button>
+                <button class="bm-filter" data-bmfilter="programming" onclick="filterBookmarks('programming')">💻 Programming</button>
+                <button class="bm-filter" data-bmfilter="dbms" onclick="filterBookmarks('dbms')">🗃️ DBMS</button>
+                <button class="bm-filter" data-bmfilter="os" onclick="filterBookmarks('os')">⚙️ OS</button>
+                <button class="bm-filter" data-bmfilter="networking" onclick="filterBookmarks('networking')">🌐 Networks</button>
+                <button class="bm-filter" data-bmfilter="dsa" onclick="filterBookmarks('dsa')">🧮 DSA</button>
+            </div>
+
+            <div class="bookmark-stats" id="bookmarkStats"></div>
+            <div id="bookmarksList" class="bookmarks-list">
+                <p class="empty-state">No bookmarked questions yet. Bookmark questions during quizzes to review later!</p>
+            </div>
+
+            <div class="bookmark-actions" id="bookmarkActions" style="display:none;">
+                <button class="btn btn-primary" onclick="startBookmarkQuiz()">
+                    <i class="fas fa-play"></i> Practice Bookmarked Questions
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="clearAllBookmarks()">
+                    <i class="fas fa-trash"></i> Clear All Bookmarks
+                </button>
+            </div>
+        </section>
     </main>
+
+    <!-- Scroll to Top Button -->
+    <button class="scroll-top-btn" id="scrollTopBtn" onclick="scrollToTop()" title="Scroll to top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h2>⌨️ Keyboard Shortcuts</h2>
+                <button class="close-btn" onclick="document.getElementById('shortcutsModal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcut-list">
+                    <div class="shortcut-item"><kbd>?</kbd> <span>Show this help</span></div>
+                    <div class="shortcut-item"><kbd>D</kbd> <span>Go to Dashboard</span></div>
+                    <div class="shortcut-item"><kbd>Q</kbd> <span>Go to Quiz</span></div>
+                    <div class="shortcut-item"><kbd>S</kbd> <span>Go to Study Materials</span></div>
+                    <div class="shortcut-item"><kbd>F</kbd> <span>Go to Flashcards</span></div>
+                    <div class="shortcut-item"><kbd>N</kbd> <span>Go to Notes</span></div>
+                    <div class="shortcut-item"><kbd>B</kbd> <span>Go to Bookmarks</span></div>
+                    <div class="shortcut-item"><kbd>T</kbd> <span>Toggle dark mode</span></div>
+                    <div class="shortcut-item"><kbd>→</kbd> <span>Next question/flashcard</span></div>
+                    <div class="shortcut-item"><kbd>←</kbd> <span>Previous question/flashcard</span></div>
+                    <div class="shortcut-item"><kbd>Space</kbd> <span>Flip flashcard</span></div>
+                    <div class="shortcut-item"><kbd>1-4</kbd> <span>Select option A-D (quiz)</span></div>
+                    <div class="shortcut-item"><kbd>Ctrl+B</kbd> <span>Bookmark current question</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="questions-data.js"></script>
     <script src="study-data.js"></script>

@@ -38,7 +38,9 @@ function loadProgress() {
         topicStats: {},
         testHistory: [],
         activities: [],
-        flashcardProgress: {}
+        flashcardProgress: {},
+        notes: [],
+        bookmarks: []
     };
 }
 
@@ -68,6 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDSATab();
     renderCodingTab();
     renderPapersTab();
+    initKeyboardShortcuts();
+    initScrollToTop();
+    renderNotesList();
+    renderBookmarksList();
 });
 
 // ===== NAVIGATION =====
@@ -94,7 +100,9 @@ function navigateTo(page) {
         interview: 'Interview Prep',
         flashcards: 'Flashcards',
         resources: 'Resources & Tips',
-        progress: 'My Progress'
+        progress: 'My Progress',
+        notes: 'Notes & Timer',
+        bookmarks: 'Bookmarks'
     }[page] || 'Dashboard';
 
     // Close sidebar on mobile
@@ -102,6 +110,8 @@ function navigateTo(page) {
 
     if (page === 'dashboard') updateDashboard();
     if (page === 'progress') renderProgressPage();
+    if (page === 'notes') renderNotesList();
+    if (page === 'bookmarks') renderBookmarksList();
 }
 
 function toggleSidebar() {
@@ -684,7 +694,17 @@ function renderDSATab() {
         { name: "Dijkstra's Algorithm", desc: "Shortest path — O(V² or V log V)", diff: "Hard", pattern: "Graph" },
         { name: "Coin Change (DP)", desc: "Min coins to make amount — O(amount × coins)", diff: "Medium", pattern: "Dynamic Programming" },
         { name: "LCS (DP)", desc: "Longest Common Subsequence — O(m×n)", diff: "Medium", pattern: "Dynamic Programming" },
-        { name: "Subset Sum", desc: "Check if subset sums to target — O(n×sum)", diff: "Medium", pattern: "Dynamic Programming" }
+        { name: "Subset Sum", desc: "Check if subset sums to target — O(n×sum)", diff: "Medium", pattern: "Dynamic Programming" },
+        { name: "Sliding Window Max", desc: "Max in each window of size k — O(n) with deque", diff: "Medium", pattern: "Sliding Window" },
+        { name: "Valid Parentheses", desc: "Stack-based bracket matching — O(n)", diff: "Easy", pattern: "Stack" },
+        { name: "Palindrome Check", desc: "Two pointer from both ends — O(n)", diff: "Easy", pattern: "Two Pointers" },
+        { name: "Remove Duplicates", desc: "Sorted array in-place — O(n) two pointer", diff: "Easy", pattern: "Two Pointers" },
+        { name: "Topological Sort", desc: "DAG ordering — O(V+E) with DFS/BFS", diff: "Medium", pattern: "Graph" },
+        { name: "0/1 Knapsack", desc: "Max value within weight limit — O(n×W)", diff: "Medium", pattern: "Dynamic Programming" },
+        { name: "Longest Palindrome Substr", desc: "Expand around center — O(n²)", diff: "Medium", pattern: "String" },
+        { name: "Inorder/Preorder Traversal", desc: "Tree traversal — O(n)", diff: "Easy", pattern: "Tree" },
+        { name: "BST Operations", desc: "Insert/Search/Delete — O(h) avg O(log n)", diff: "Medium", pattern: "Tree" },
+        { name: "Heap / Priority Queue", desc: "Extract min/max — O(log n)", diff: "Medium", pattern: "Heap" }
     ];
 
     let html = '<div class="study-grid">';
@@ -712,12 +732,20 @@ function renderCodingTab() {
         "Bubble Sort", "Selection Sort", "Insertion Sort", "Linear Search", "Binary Search",
         "String Reverse", "Count Vowels", "Remove Duplicates from String", "Anagram Check",
         "Two Sum Problem", "Array Rotation", "Max/Min in Array", "Matrix Addition",
-        "Matrix Transpose", "Pattern Printing (Triangle)"
+        "Matrix Transpose", "Pattern Printing (Triangle)", "Star Pattern (Pyramid)",
+        "Number Pattern (Floyd's)", "Merge Two Sorted Arrays", "Find Second Largest",
+        "Count Words in String", "Check Substring", "Swap Without Temp Variable",
+        "Power of a Number", "Sum of Array Elements", "Find Duplicate in Array",
+        "Remove Element from Array", "String to Integer (atoi)", "Caesar Cipher",
+        "Check Perfect Number", "Find Missing Number (1 to N)", "Decimal to Binary",
+        "Binary to Decimal", "Tower of Hanoi", "Queue using Stacks",
+        "Stack using Queues", "Linked List Insertion", "Linked List Deletion",
+        "Reverse a Linked List", "Middle of Linked List", "Check Balanced Parentheses"
     ];
 
     let html = `<div class="card" style="margin-bottom:1rem;">
-        <h3>💻 Top 25 Coding Problems for TCS NQT</h3>
-        <p style="color:var(--text-secondary);margin-bottom:1rem;">Practice these in Java, Python, or C. Focus on logic, not syntax.</p>
+        <h3>💻 Top 50 Coding Problems for TCS NQT</h3>
+        <p style="color:var(--text-secondary);margin-bottom:1rem;">Practice these in Java, Python, or C. Focus on logic, not syntax. TCS NQT coding section has 1-2 problems (Easy to Medium).</p>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0.5rem;">`;
 
     problems.forEach((p, i) => {
@@ -738,7 +766,12 @@ function renderPapersTab() {
         { name: "Practice Paper 2", sections: "Mixed sections with solutions", qs: 50 },
         { name: "Practice Paper 3", sections: "Mixed sections with solutions", qs: 50 },
         { name: "Practice Paper 4", sections: "Mixed sections with solutions", qs: 50 },
-        { name: "Practice Paper 5", sections: "Mixed sections with solutions", qs: 50 }
+        { name: "Practice Paper 5", sections: "Mixed sections with solutions", qs: 50 },
+        { name: "Practice Paper 6", sections: "Quantitative + Reasoning + Verbal", qs: 50 },
+        { name: "Practice Paper 7", sections: "Programming + DBMS + OS + Networks", qs: 50 },
+        { name: "Practice Paper 8", sections: "Full-length mock with all sections", qs: 50 },
+        { name: "Practice Paper 9", sections: "Advanced difficulty mixed paper", qs: 50 },
+        { name: "Practice Paper 10", sections: "Final revision comprehensive paper", qs: 50 }
     ];
 
     let html = '<div class="study-grid">';
@@ -959,7 +992,12 @@ function renderTopicResourceGrid() {
                 { name: "IndiaBix — Profit & Loss", url: "https://www.indiabix.com/aptitude/profit-and-loss/" },
                 { name: "IndiaBix — Time & Work", url: "https://www.indiabix.com/aptitude/time-and-work/" },
                 { name: "IndiaBix — Time & Distance", url: "https://www.indiabix.com/aptitude/time-and-distance/" },
-                { name: "IndiaBix — Simple & Compound Interest", url: "https://www.indiabix.com/aptitude/simple-interest/" }
+                { name: "IndiaBix — Simple & Compound Interest", url: "https://www.indiabix.com/aptitude/simple-interest/" },
+                { name: "IndiaBix — Ratio & Proportion", url: "https://www.indiabix.com/aptitude/ratio-and-proportion/" },
+                { name: "IndiaBix — Averages", url: "https://www.indiabix.com/aptitude/average/" },
+                { name: "IndiaBix — Permutation & Combination", url: "https://www.indiabix.com/aptitude/permutation-and-combination/" },
+                { name: "IndiaBix — Probability", url: "https://www.indiabix.com/aptitude/probability/" },
+                { name: "IndiaBix — Problems on Ages", url: "https://www.indiabix.com/aptitude/problems-on-ages/" }
             ]
         },
         {
@@ -969,27 +1007,77 @@ function renderTopicResourceGrid() {
                 { name: "IndiaBix — Coding-Decoding", url: "https://www.indiabix.com/logical-reasoning/coding-decoding/" },
                 { name: "IndiaBix — Blood Relations", url: "https://www.indiabix.com/logical-reasoning/blood-relation-test/" },
                 { name: "IndiaBix — Seating Arrangement", url: "https://www.indiabix.com/logical-reasoning/seating-arrangement/" },
-                { name: "IndiaBix — Syllogisms", url: "https://www.indiabix.com/logical-reasoning/logic/" }
+                { name: "IndiaBix — Syllogisms", url: "https://www.indiabix.com/logical-reasoning/logic/" },
+                { name: "IndiaBix — Direction Sense", url: "https://www.indiabix.com/logical-reasoning/direction-sense-test/" },
+                { name: "IndiaBix — Clocks & Calendars", url: "https://www.indiabix.com/aptitude/calendar/" },
+                { name: "IndiaBix — Analogy", url: "https://www.indiabix.com/verbal-reasoning/analogy/" }
             ]
         },
         {
             title: "📝 Verbal Ability",
             resources: [
                 { name: "IndiaBix — Synonyms", url: "https://www.indiabix.com/verbal-ability/synonyms/" },
+                { name: "IndiaBix — Antonyms", url: "https://www.indiabix.com/verbal-ability/antonyms/" },
                 { name: "IndiaBix — Sentence Correction", url: "https://www.indiabix.com/verbal-ability/sentence-correction/" },
                 { name: "IndiaBix — Reading Comprehension", url: "https://www.indiabix.com/verbal-ability/comprehension/" },
                 { name: "IndiaBix — Ordering of Sentences", url: "https://www.indiabix.com/verbal-ability/ordering-of-sentences/" },
+                { name: "IndiaBix — One Word Substitution", url: "https://www.indiabix.com/verbal-ability/one-word-substitutes/" },
+                { name: "IndiaBix — Idioms & Phrases", url: "https://www.indiabix.com/verbal-ability/idioms-and-phrases/" },
                 { name: "GFG — English Grammar Practice", url: "https://www.geeksforgeeks.org/verbal-ability/" }
             ]
         },
         {
-            title: "💻 Programming & CS",
+            title: "💻 Programming & Pseudocode",
             resources: [
                 { name: "GFG — Pseudocode Practice", url: "https://www.geeksforgeeks.org/pseudocode/" },
+                { name: "GFG — Output Questions C", url: "https://www.geeksforgeeks.org/c-programming-language/" },
+                { name: "GFG — Output Questions Java", url: "https://www.geeksforgeeks.org/java/" },
+                { name: "GFG — Output Questions Python", url: "https://www.geeksforgeeks.org/python-programming-language/" },
+                { name: "HackerRank — C Practice", url: "https://www.hackerrank.com/domains/c" },
+                { name: "HackerRank — Java Practice", url: "https://www.hackerrank.com/domains/java" },
+                { name: "HackerRank — Python Practice", url: "https://www.hackerrank.com/domains/python" }
+            ]
+        },
+        {
+            title: "🗃️ DBMS & SQL",
+            resources: [
                 { name: "GFG — DBMS Interview Questions", url: "https://www.geeksforgeeks.org/dbms-interview-questions/" },
+                { name: "GFG — SQL Tutorial", url: "https://www.geeksforgeeks.org/sql-tutorial/" },
+                { name: "W3Schools — SQL Practice", url: "https://www.w3schools.com/sql/sql_exercises.asp" },
+                { name: "SQLZoo — Interactive Queries", url: "https://sqlzoo.net/" },
+                { name: "GFG — Normalization", url: "https://www.geeksforgeeks.org/normal-forms-in-dbms/" },
+                { name: "HackerRank — SQL Practice", url: "https://www.hackerrank.com/domains/sql" }
+            ]
+        },
+        {
+            title: "⚙️ Operating Systems",
+            resources: [
                 { name: "GFG — Operating Systems", url: "https://www.geeksforgeeks.org/operating-systems/" },
+                { name: "GFG — CPU Scheduling", url: "https://www.geeksforgeeks.org/cpu-scheduling-in-operating-systems/" },
+                { name: "GFG — Deadlocks", url: "https://www.geeksforgeeks.org/introduction-of-deadlock-in-operating-system/" },
+                { name: "GFG — Page Replacement", url: "https://www.geeksforgeeks.org/page-replacement-algorithms-in-operating-systems/" },
+                { name: "Studytonight — OS Notes", url: "https://www.studytonight.com/operating-system/" }
+            ]
+        },
+        {
+            title: "🌐 Computer Networks",
+            resources: [
                 { name: "GFG — Computer Networks", url: "https://www.geeksforgeeks.org/computer-network-tutorials/" },
-                { name: "GFG — Data Structures", url: "https://www.geeksforgeeks.org/data-structures/" }
+                { name: "GFG — OSI Model", url: "https://www.geeksforgeeks.org/open-systems-interconnection-model-osi/" },
+                { name: "GFG — TCP vs UDP", url: "https://www.geeksforgeeks.org/differences-between-tcp-and-udp/" },
+                { name: "GFG — Subnetting", url: "https://www.geeksforgeeks.org/introduction-of-subnetting/" },
+                { name: "Studytonight — Networking", url: "https://www.studytonight.com/computer-networks/" }
+            ]
+        },
+        {
+            title: "🧮 Data Structures & Algorithms",
+            resources: [
+                { name: "GFG — Data Structures", url: "https://www.geeksforgeeks.org/data-structures/" },
+                { name: "GFG — Sorting Algorithms", url: "https://www.geeksforgeeks.org/sorting-algorithms/" },
+                { name: "GFG — Searching Algorithms", url: "https://www.geeksforgeeks.org/searching-algorithms/" },
+                { name: "Visualgo — Visual Algorithms", url: "https://visualgo.net/en" },
+                { name: "GFG — Trees", url: "https://www.geeksforgeeks.org/binary-tree-data-structure/" },
+                { name: "GFG — Graph Algorithms", url: "https://www.geeksforgeeks.org/graph-data-structure-and-algorithms/" }
             ]
         }
     ];
@@ -1171,15 +1259,456 @@ function formatTime(seconds) {
     return `${m}m`;
 }
 
-// ===== KEYBOARD SHORTCUTS =====
-document.addEventListener('keydown', (e) => {
-    if (state.currentPage !== 'quiz' || !state.quiz.questions.length || state.quiz.submitted) return;
+// ===== KEYBOARD SHORTCUTS (ENHANCED) =====
+function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger if user is typing in input/textarea
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
 
-    if (e.key === 'ArrowRight' || e.key === 'n') nextQuestion();
-    if (e.key === 'ArrowLeft' || e.key === 'p') prevQuestion();
-    if (e.key >= '1' && e.key <= '4') {
-        const idx = parseInt(e.key) - 1;
-        const q = state.quiz.questions[state.quiz.currentIndex];
-        if (idx < q.options.length) selectAnswer(q.id, idx);
+        // Global shortcuts
+        if (e.key === '?') { document.getElementById('shortcutsModal').style.display = 'flex'; return; }
+        if (e.key === 'Escape') {
+            document.getElementById('shortcutsModal').style.display = 'none';
+            closeStudyModal();
+            return;
+        }
+        if (e.key === 't' || e.key === 'T') { toggleTheme(); return; }
+
+        // Navigation shortcuts (lowercase only, not during quiz)
+        if (!e.ctrlKey && !e.altKey && !e.shiftKey) {
+            if (e.key === 'd') { navigateTo('dashboard'); return; }
+            if (e.key === 'q' && state.currentPage !== 'quiz') { navigateTo('quiz'); return; }
+            if (e.key === 's' && state.currentPage !== 'quiz') { navigateTo('study'); return; }
+            if (e.key === 'f' && state.currentPage !== 'quiz') { navigateTo('flashcards'); return; }
+            if (e.key === 'n' && state.currentPage !== 'quiz') { navigateTo('notes'); return; }
+            if (e.key === 'b' && state.currentPage !== 'quiz') { navigateTo('bookmarks'); return; }
+        }
+
+        // Ctrl+B to bookmark current question
+        if (e.ctrlKey && e.key === 'b') {
+            e.preventDefault();
+            if (state.currentPage === 'quiz' && state.quiz.questions.length) {
+                toggleBookmarkQuestion();
+            }
+            return;
+        }
+
+        // Quiz shortcuts
+        if (state.currentPage === 'quiz' && state.quiz.questions.length && !state.quiz.submitted) {
+            if (e.key === 'ArrowRight') nextQuestion();
+            if (e.key === 'ArrowLeft') prevQuestion();
+            if (e.key >= '1' && e.key <= '4') {
+                const idx = parseInt(e.key) - 1;
+                const q = state.quiz.questions[state.quiz.currentIndex];
+                if (idx < q.options.length) selectAnswer(q.id, idx);
+            }
+        }
+
+        // Flashcard shortcuts
+        if (state.currentPage === 'flashcards') {
+            if (e.key === 'ArrowRight') nextFlashcard();
+            if (e.key === 'ArrowLeft') prevFlashcard();
+            if (e.key === ' ') { e.preventDefault(); flipFlashcard(); }
+        }
+    });
+}
+
+// ===== SCROLL TO TOP =====
+function initScrollToTop() {
+    const main = document.getElementById('mainContent');
+    main.addEventListener('scroll', () => {
+        const btn = document.getElementById('scrollTopBtn');
+        if (main.scrollTop > 400) btn.classList.add('visible');
+        else btn.classList.remove('visible');
+    });
+    // Also listen on window scroll
+    window.addEventListener('scroll', () => {
+        const btn = document.getElementById('scrollTopBtn');
+        if (window.scrollY > 400) btn.classList.add('visible');
+        else btn.classList.remove('visible');
+    });
+}
+
+function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('mainContent').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ===== POMODORO TIMER =====
+let pomodoroState = {
+    running: false,
+    mode: 'focus', // 'focus', 'break', 'longbreak'
+    remaining: 25 * 60,
+    interval: null,
+    round: 1,
+    focusDuration: 25,
+    breakDuration: 5,
+    longBreakDuration: 15,
+    totalFocusTime: 0
+};
+
+function togglePomodoro() {
+    if (pomodoroState.running) {
+        pausePomodoro();
+    } else {
+        startPomodoro();
     }
-});
+}
+
+function startPomodoro() {
+    pomodoroState.running = true;
+    const btn = document.getElementById('pomodoroStartBtn');
+    btn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+
+    pomodoroState.interval = setInterval(() => {
+        pomodoroState.remaining--;
+        if (pomodoroState.mode === 'focus') pomodoroState.totalFocusTime++;
+
+        updatePomodoroDisplay();
+
+        if (pomodoroState.remaining <= 0) {
+            clearInterval(pomodoroState.interval);
+            pomodoroState.running = false;
+            onPomodoroComplete();
+        }
+    }, 1000);
+}
+
+function pausePomodoro() {
+    pomodoroState.running = false;
+    clearInterval(pomodoroState.interval);
+    const btn = document.getElementById('pomodoroStartBtn');
+    btn.innerHTML = '<i class="fas fa-play"></i> Resume';
+}
+
+function resetPomodoro() {
+    pomodoroState.running = false;
+    pomodoroState.mode = 'focus';
+    pomodoroState.round = 1;
+    clearInterval(pomodoroState.interval);
+    pomodoroState.remaining = pomodoroState.focusDuration * 60;
+    updatePomodoroDisplay();
+    const btn = document.getElementById('pomodoroStartBtn');
+    btn.innerHTML = '<i class="fas fa-play"></i> Start';
+}
+
+function onPomodoroComplete() {
+    // Play notification sound
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        osc.frequency.value = 800;
+        osc.connect(ctx.destination);
+        osc.start();
+        setTimeout(() => osc.stop(), 300);
+    } catch(e) {}
+
+    if (pomodoroState.mode === 'focus') {
+        // Track focus time
+        state.progress.totalTime += pomodoroState.focusDuration * 60;
+        state.progress.activities.push({
+            icon: '🍅',
+            text: `Completed ${pomodoroState.focusDuration}min focus session (Round ${pomodoroState.round})`,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        saveProgress();
+
+        if (pomodoroState.round >= 4) {
+            pomodoroState.mode = 'longbreak';
+            pomodoroState.remaining = pomodoroState.longBreakDuration * 60;
+            pomodoroState.round = 1;
+            alert('Great work! 4 rounds done. Take a long break!');
+        } else {
+            pomodoroState.mode = 'break';
+            pomodoroState.remaining = pomodoroState.breakDuration * 60;
+            pomodoroState.round++;
+            alert('Focus session done! Take a short break.');
+        }
+    } else {
+        pomodoroState.mode = 'focus';
+        pomodoroState.remaining = pomodoroState.focusDuration * 60;
+        alert('Break over! Ready for another focus session?');
+    }
+
+    updatePomodoroDisplay();
+    const btn = document.getElementById('pomodoroStartBtn');
+    btn.innerHTML = '<i class="fas fa-play"></i> Start';
+}
+
+function updatePomodoroDisplay() {
+    const m = Math.floor(pomodoroState.remaining / 60);
+    const s = pomodoroState.remaining % 60;
+    const display = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+    const mainDisplay = document.getElementById('pomodoroDisplay');
+    if (mainDisplay) mainDisplay.textContent = display;
+
+    const miniDisplay = document.getElementById('pomodoroMiniDisplay');
+    if (miniDisplay) miniDisplay.textContent = display;
+
+    const label = document.getElementById('pomodoroLabel');
+    if (label) {
+        label.textContent = pomodoroState.mode === 'focus' ? 'Focus' : pomodoroState.mode === 'break' ? 'Break' : 'Long Break';
+    }
+
+    const rounds = document.getElementById('pomodoroRounds');
+    if (rounds) rounds.textContent = `Round ${pomodoroState.round}/4`;
+
+    // Update arc
+    const arc = document.getElementById('pomodoroArc');
+    if (arc) {
+        const total = pomodoroState.mode === 'focus' ? pomodoroState.focusDuration * 60 :
+            pomodoroState.mode === 'break' ? pomodoroState.breakDuration * 60 : pomodoroState.longBreakDuration * 60;
+        const progress = 1 - (pomodoroState.remaining / total);
+        const circumference = 2 * Math.PI * 54;
+        arc.style.strokeDashoffset = circumference * (1 - progress);
+        arc.setAttribute('stroke', pomodoroState.mode === 'focus' ? 'var(--primary)' : 'var(--success)');
+    }
+}
+
+function updatePomodoroSettings() {
+    const focus = parseInt(document.getElementById('focusDuration').value) || 25;
+    const brk = parseInt(document.getElementById('breakDuration').value) || 5;
+    const lbrk = parseInt(document.getElementById('longBreakDuration').value) || 15;
+    pomodoroState.focusDuration = Math.max(1, Math.min(60, focus));
+    pomodoroState.breakDuration = Math.max(1, Math.min(30, brk));
+    pomodoroState.longBreakDuration = Math.max(1, Math.min(60, lbrk));
+    if (!pomodoroState.running) {
+        pomodoroState.remaining = pomodoroState.focusDuration * 60;
+        updatePomodoroDisplay();
+    }
+}
+
+// ===== NOTES =====
+function saveNote() {
+    const title = document.getElementById('noteTitle').value.trim();
+    const content = document.getElementById('noteContent').value.trim();
+    const category = document.getElementById('noteCategory').value;
+
+    if (!content) { alert('Please write something before saving.'); return; }
+
+    if (!state.progress.notes) state.progress.notes = [];
+
+    state.progress.notes.push({
+        id: Date.now(),
+        title: title || 'Untitled Note',
+        content: content,
+        category: category,
+        date: new Date().toLocaleString()
+    });
+
+    saveProgress();
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteContent').value = '';
+    renderNotesList();
+
+    state.progress.activities.push({
+        icon: '📝',
+        text: `Saved note: ${title || 'Untitled'}`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+    saveProgress();
+}
+
+function renderNotesList() {
+    if (!state.progress.notes) state.progress.notes = [];
+
+    const container = document.getElementById('notesList');
+    if (!container) return;
+
+    const filter = document.getElementById('noteFilterCategory')?.value || 'all';
+    let notes = [...state.progress.notes].reverse();
+    if (filter !== 'all') notes = notes.filter(n => n.category === filter);
+
+    if (notes.length === 0) {
+        container.innerHTML = '<p class="empty-state">No notes yet. Start writing!</p>';
+        return;
+    }
+
+    const categoryLabels = {
+        general: '📝', quantitative: '🔢', verbal: '📝', reasoning: '🧩',
+        programming: '💻', formulas: '📐', mistakes: '⚠️'
+    };
+
+    container.innerHTML = notes.map(n => `
+        <div class="note-item">
+            <div class="note-item-header">
+                <span class="note-category-badge">${categoryLabels[n.category] || '📝'} ${n.category}</span>
+                <span class="note-date">${n.date}</span>
+                <button class="note-delete-btn" onclick="deleteNote(${n.id})" title="Delete note">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <h4 class="note-item-title">${escapeHtml(n.title)}</h4>
+            <p class="note-item-content">${escapeHtml(n.content)}</p>
+        </div>
+    `).join('');
+}
+
+function deleteNote(id) {
+    if (!confirm('Delete this note?')) return;
+    state.progress.notes = state.progress.notes.filter(n => n.id !== id);
+    saveProgress();
+    renderNotesList();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ===== BOOKMARKS =====
+function toggleBookmarkQuestion() {
+    if (!state.quiz.questions.length) return;
+    const q = state.quiz.questions[state.quiz.currentIndex];
+    if (!state.progress.bookmarks) state.progress.bookmarks = [];
+
+    const idx = state.progress.bookmarks.indexOf(q.id);
+    if (idx > -1) {
+        state.progress.bookmarks.splice(idx, 1);
+    } else {
+        state.progress.bookmarks.push(q.id);
+    }
+    saveProgress();
+    updateBookmarkIcon();
+}
+
+function updateBookmarkIcon() {
+    const icon = document.getElementById('bookmarkIcon');
+    if (!icon) return;
+    if (!state.quiz.questions.length) return;
+    const q = state.quiz.questions[state.quiz.currentIndex];
+    if (!state.progress.bookmarks) state.progress.bookmarks = [];
+    const isBookmarked = state.progress.bookmarks.includes(q.id);
+    icon.className = isBookmarked ? 'fas fa-bookmark' : 'far fa-bookmark';
+    icon.parentElement.classList.toggle('bookmarked', isBookmarked);
+}
+
+function renderBookmarksList(filterTopic) {
+    if (!state.progress.bookmarks) state.progress.bookmarks = [];
+    const container = document.getElementById('bookmarksList');
+    const statsEl = document.getElementById('bookmarkStats');
+    const actionsEl = document.getElementById('bookmarkActions');
+    if (!container) return;
+
+    const filter = filterTopic || 'all';
+    let bookmarkedQs = QUESTION_BANK.filter(q => state.progress.bookmarks.includes(q.id));
+    if (filter !== 'all') bookmarkedQs = bookmarkedQs.filter(q => q.topic === filter);
+
+    // Stats
+    if (statsEl) {
+        const total = state.progress.bookmarks.length;
+        const byTopic = {};
+        QUESTION_BANK.filter(q => state.progress.bookmarks.includes(q.id)).forEach(q => {
+            byTopic[q.topic] = (byTopic[q.topic] || 0) + 1;
+        });
+        if (total > 0) {
+            statsEl.innerHTML = `<div class="bm-stats-row">
+                <span class="bm-stat-total">${total} bookmarked</span>
+                ${Object.entries(byTopic).map(([t, c]) => `<span class="bm-stat-item">${TOPIC_META[t]?.icon || ''} ${c}</span>`).join('')}
+            </div>`;
+        } else {
+            statsEl.innerHTML = '';
+        }
+    }
+
+    if (bookmarkedQs.length === 0) {
+        container.innerHTML = '<p class="empty-state">No bookmarked questions' +
+            (filter !== 'all' ? ' in this category' : '') +
+            '. Bookmark questions during quizzes to review later!</p>';
+        if (actionsEl) actionsEl.style.display = 'none';
+        return;
+    }
+
+    if (actionsEl) actionsEl.style.display = 'flex';
+
+    const letters = ['A', 'B', 'C', 'D'];
+    container.innerHTML = bookmarkedQs.map(q => `
+        <div class="bookmark-item">
+            <div class="bm-item-header">
+                <span class="bm-topic-badge">${TOPIC_META[q.topic]?.icon || ''} ${TOPIC_META[q.topic]?.name || q.topic}</span>
+                <span class="diff-badge ${q.difficulty}">${q.difficulty}</span>
+                <button class="bm-remove-btn" onclick="removeBookmark(${q.id})" title="Remove bookmark">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <h4 class="bm-question">${q.question}</h4>
+            <div class="bm-options">
+                ${q.options.map((opt, i) => `
+                    <span class="${i === q.answer ? 'bm-correct-opt' : ''}">${letters[i]}. ${opt}</span>
+                `).join('')}
+            </div>
+            <div class="bm-explanation">💡 ${q.explanation}</div>
+        </div>
+    `).join('');
+}
+
+function filterBookmarks(topic) {
+    document.querySelectorAll('.bm-filter').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-bmfilter="${topic}"]`)?.classList.add('active');
+    renderBookmarksList(topic);
+}
+
+function removeBookmark(id) {
+    state.progress.bookmarks = state.progress.bookmarks.filter(b => b !== id);
+    saveProgress();
+    renderBookmarksList();
+}
+
+function clearAllBookmarks() {
+    if (!confirm('Remove all bookmarks?')) return;
+    state.progress.bookmarks = [];
+    saveProgress();
+    renderBookmarksList();
+}
+
+function startBookmarkQuiz() {
+    if (!state.progress.bookmarks || state.progress.bookmarks.length === 0) {
+        alert('No bookmarked questions to practice.');
+        return;
+    }
+
+    navigateTo('quiz');
+
+    let pool = QUESTION_BANK.filter(q => state.progress.bookmarks.includes(q.id));
+    pool = shuffleArray(pool);
+
+    state.quiz = {
+        questions: pool,
+        currentIndex: 0,
+        answers: {},
+        startTime: Date.now(),
+        timeLimit: 0,
+        timerInterval: null,
+        submitted: false,
+        instantFeedback: true
+    };
+
+    document.getElementById('quizSetup').style.display = 'none';
+    document.getElementById('quizActive').style.display = 'block';
+    document.getElementById('quizResults').style.display = 'none';
+
+    document.getElementById('qTotal').textContent = pool.length;
+    renderQuestion();
+    renderNavigator();
+}
+
+// Override renderQuestion to also update bookmark icon
+const _origRenderQuestion = renderQuestion;
+// Patch it via wrapping
+(function() {
+    const origFn = window.renderQuestion || renderQuestion;
+    const patchedFn = function() {
+        origFn.apply(this, arguments);
+        updateBookmarkIcon();
+    };
+    // We can't reassign renderQuestion easily since it's used inline
+    // Instead, add bookmark update to goToQuestion, nextQuestion, prevQuestion via event
+})();
+
+// Simpler approach: use MutationObserver on question text to update bookmark
+const qTextEl = document.getElementById('questionText');
+if (qTextEl) {
+    new MutationObserver(() => updateBookmarkIcon()).observe(qTextEl, { childList: true, characterData: true, subtree: true });
+}
