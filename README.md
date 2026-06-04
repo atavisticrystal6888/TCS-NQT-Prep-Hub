@@ -6,7 +6,7 @@
 
 **424+ Practice Questions · 10 Previous Papers · Interactive PWA · Interview Prep**
 
-[![GitHub Pages](https://img.shields.io/badge/Live%20App-GitHub%20Pages-blue?style=for-the-badge&logo=github)](https://atavisticrystal6888.github.io/TCS-NQT-Prep-Hub/)
+[![GitHub Pages](https://img.shields.io/badge/Live%20App-GitHub%20Pages-blue?style=for-the-badge&logo=github)](https://arjunpolen.github.io/TCS-NQT-PYQ-QUESTIONS/)
 ![Questions](https://img.shields.io/badge/Questions-424+-green?style=for-the-badge)
 ![Papers](https://img.shields.io/badge/Previous%20Papers-10-orange?style=for-the-badge)
 ![PWA](https://img.shields.io/badge/PWA-Offline%20Ready-purple?style=for-the-badge)
@@ -69,7 +69,9 @@ TCS-NQT-PYQ-QUESTIONS/
 │
 └── tcs-nqt-prep-app/                  # Interactive PWA
     ├── index.html                      # App shell
-    ├── app.js                          # Core application logic
+    ├── app-core.js                     # Progress, countdown, streak, and toast helpers
+    ├── app-bootstrap.js                # Startup wiring and delegated event handling
+    ├── app.js                          # Main feature logic
     ├── questions-data.js               # Quiz question bank
     ├── study-data.js                   # Study material data
     ├── styles.css                      # UI styles with dark mode
@@ -154,13 +156,13 @@ The repo ships with a fully functional **Progressive Web App** you can install o
 
 ### Use the Web App Online
 
-Visit the [live GitHub Pages site](https://atavisticrystal6888.github.io/TCS-NQT-Prep-Hub/) and start practicing immediately. Click **"Install"** in your browser to add it to your home screen.
+Visit the [live GitHub Pages site](https://arjunpolen.github.io/TCS-NQT-PYQ-QUESTIONS/) and start practicing immediately. Click **"Install"** in your browser to add it to your home screen.
 
 ### Use Locally
 
 ```bash
 # Clone the repo
-git clone https://github.com/atavisticrystal6888/TCS-NQT-Prep-Hub.git
+git clone https://github.com/Arjunpolen/TCS-NQT-PYQ-QUESTIONS.git
 
 # Open in browser
 # Simply open index.html — no build tools or servers needed

@@ -3,9 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TCS NQT Prep Hub — All-in-One Preparation</title>
+    <title>TCS NQT Prep Hub | Mock Tests, PYQs, Flashcards & Study Plan</title>
+    <meta name="description" content="Prepare for TCS NQT with realistic mock tests, previous year questions, flashcards, interview prep, analytics, and an offline-ready study planner.">
+    <meta name="application-name" content="TCS NQT Prep Hub">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta property="og:title" content="TCS NQT Prep Hub">
+    <meta property="og:description" content="Interactive TCS NQT preparation with 150-minute mocks, flashcards, study plans, and offline support.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://arjunpolen.github.io/TCS-NQT-PYQ-QUESTIONS/tcs-nqt-prep-app/">
+    <meta property="og:image" content="https://arjunpolen.github.io/TCS-NQT-PYQ-QUESTIONS/tcs-nqt-prep-app/icon-512.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TCS NQT Prep Hub">
+    <meta name="twitter:description" content="Practice TCS NQT with quizzes, analytics, flashcards, and an installable offline app.">
+    <link rel="canonical" href="https://arjunpolen.github.io/TCS-NQT-PYQ-QUESTIONS/tcs-nqt-prep-app/">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4361ee">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/svg+xml" href="icon-192.svg">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -19,7 +34,7 @@
                 <i class="fas fa-graduation-cap"></i>
                 <span>NQT Prep Hub</span>
             </div>
-            <button class="sidebar-toggle" onclick="toggleSidebar()">
+            <button type="button" class="sidebar-toggle" data-action="toggle-sidebar">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
@@ -73,7 +88,7 @@
     <main id="mainContent" class="main-content">
         <!-- Top Bar -->
         <header class="top-bar">
-            <button class="mobile-menu-btn" onclick="toggleSidebar()">
+            <button type="button" class="mobile-menu-btn" data-action="toggle-sidebar">
                 <i class="fas fa-bars"></i>
             </button>
             <div class="top-bar-left">
@@ -81,29 +96,34 @@
             </div>
             <div class="top-bar-right">
                 <div class="search-container" id="searchContainer">
-                    <button class="search-trigger" onclick="toggleSearch()" title="Search (Ctrl+K)">
+                    <button type="button" class="search-trigger" data-action="toggle-search" title="Search (Ctrl+K)">
                         <i class="fas fa-search"></i>
                     </button>
                     <div class="search-overlay" id="searchOverlay" style="display:none;">
                         <div class="search-box">
                             <div class="search-input-wrapper">
                                 <i class="fas fa-search"></i>
-                                <input type="text" id="globalSearchInput" placeholder="Search questions, flashcards, topics..." autocomplete="off" oninput="performSearch(this.value)">
+                                <input type="text" id="globalSearchInput" placeholder="Search questions, flashcards, topics..." autocomplete="off">
                                 <kbd>Esc</kbd>
                             </div>
                             <div class="search-results" id="searchResults"></div>
                         </div>
                     </div>
                 </div>
-                <div class="pomodoro-mini" id="pomodoroMini" onclick="navigateTo('notes')" title="Study Timer">
+                <div class="pomodoro-mini" id="pomodoroMini" data-action="navigate" data-page="notes" role="button" tabindex="0" title="Study Timer">
                     <i class="fas fa-stopwatch"></i>
                     <span id="pomodoroMiniDisplay">25:00</span>
                 </div>
                 <div class="streak-badge" id="streakBadge">
                     <i class="fas fa-fire"></i>
-                    <span id="streakCount">0</span> day streak
+                    <span id="streakCount">0</span>
+                    <span id="streakLabel">days streak</span>
                 </div>
-                <button class="theme-toggle" onclick="toggleTheme()">
+                <button type="button" class="install-btn" id="installAppBtn" data-action="install-app" hidden>
+                    <i class="fas fa-download"></i>
+                    <span>Install</span>
+                </button>
+                <button type="button" class="theme-toggle" data-action="toggle-theme">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
             </div>
@@ -117,10 +137,23 @@
                     <p>Your TCS NQT exam is approaching. Let's ace it!</p>
                 </div>
                 <div class="quick-start">
-                    <button class="btn btn-primary btn-lg" onclick="navigateTo('quiz')">
+                    <button type="button" class="btn btn-primary btn-lg" data-action="navigate" data-page="quiz">
                         <i class="fas fa-play"></i> Start Practice Test
                     </button>
                 </div>
+            </div>
+
+            <div class="card exam-planner-card">
+                <div>
+                    <p class="exam-planner-label">Exam target</p>
+                    <h3>Keep the countdown realistic</h3>
+                    <p id="dashboardCountdownCopy">Set your real exam date to personalize the countdown and study plan.</p>
+                    <p id="dashboardExamMeta" class="exam-planner-meta">Your revision schedule and mock strategy will update around that date.</p>
+                </div>
+                <label class="exam-date-field" for="dashboardExamDate">
+                    <span>Exam date</span>
+                    <input type="date" id="dashboardExamDate">
+                </label>
             </div>
 
             <div class="stats-grid">
@@ -228,6 +261,7 @@
                                 <label><input type="radio" name="timeLimit" value="30" checked> 30 min</label>
                                 <label><input type="radio" name="timeLimit" value="60"> 60 min</label>
                                 <label><input type="radio" name="timeLimit" value="90"> 90 min</label>
+                                <label><input type="radio" name="timeLimit" value="150"> 150 min</label>
                             </div>
                         </div>
                         <div class="setting-group">
@@ -237,13 +271,13 @@
                 </div>
                 <div class="quick-test-btns">
                     <h4>Quick Start</h4>
-                    <button class="btn btn-outline" onclick="startQuickTest('quantitative')">🔢 Quant Only</button>
-                    <button class="btn btn-outline" onclick="startQuickTest('logical')">🧩 Reasoning Only</button>
-                    <button class="btn btn-outline" onclick="startQuickTest('verbal')">📝 Verbal Only</button>
-                    <button class="btn btn-outline" onclick="startQuickTest('programming')">💻 Programming Only</button>
-                    <button class="btn btn-outline" onclick="startQuickTest('mock')">📋 Full Mock Test (100Q)</button>
+                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="quantitative">🔢 Quant Only</button>
+                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="logical">🧩 Reasoning Only</button>
+                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="verbal">📝 Verbal Only</button>
+                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="programming">💻 Programming Only</button>
+                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="mock">📋 Full Mock Test (100Q)</button>
                 </div>
-                <button class="btn btn-primary btn-lg" onclick="startQuiz()" style="margin-top: 1.5rem;">
+                <button type="button" class="btn btn-primary btn-lg" data-action="start-quiz" style="margin-top: 1.5rem;">
                     <i class="fas fa-rocket"></i> Start Test
                 </button>
             </div>
@@ -254,7 +288,7 @@
                     <div class="quiz-info">
                         <span class="q-counter">Question <span id="qCurrent">1</span> of <span id="qTotal">25</span></span>
                         <span class="q-topic-badge" id="qTopicBadge">Quantitative</span>
-                        <button class="bookmark-btn" id="bookmarkBtn" onclick="toggleBookmarkQuestion()" title="Bookmark this question">
+                        <button type="button" class="bookmark-btn" id="bookmarkBtn" data-action="toggle-bookmark" title="Bookmark this question">
                             <i class="far fa-bookmark" id="bookmarkIcon"></i>
                         </button>
                     </div>
@@ -271,14 +305,14 @@
                     <div id="feedbackBox" class="feedback-box" style="display:none;"></div>
                 </div>
                 <div class="quiz-nav">
-                    <button class="btn btn-secondary" id="prevBtn" onclick="prevQuestion()">
+                    <button type="button" class="btn btn-secondary" id="prevBtn" data-action="prev-question">
                         <i class="fas fa-arrow-left"></i> Previous
                     </button>
                     <div class="q-navigator" id="qNavigator"></div>
-                    <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">
+                    <button type="button" class="btn btn-primary" id="nextBtn" data-action="next-question">
                         Next <i class="fas fa-arrow-right"></i>
                     </button>
-                    <button class="btn btn-success" id="submitBtn" onclick="submitQuiz()" style="display:none;">
+                    <button type="button" class="btn btn-success" id="submitBtn" data-action="submit-quiz" style="display:none;">
                         <i class="fas fa-paper-plane"></i> Submit Test
                     </button>
                 </div>
@@ -308,11 +342,11 @@
                 </div>
                 <div class="results-topic-breakdown" id="topicBreakdown"></div>
                 <div class="results-actions">
-                    <button class="btn btn-primary" onclick="reviewQuiz()"><i class="fas fa-search"></i> Review Answers</button>
-                    <button class="btn btn-warning" onclick="reviewWrongOnly()"><i class="fas fa-exclamation-triangle"></i> Wrong Only</button>
-                    <button class="btn btn-secondary" onclick="retakeQuiz()"><i class="fas fa-redo"></i> Retake Test</button>
-                    <button class="btn btn-success" onclick="startWeakAreaQuiz()"><i class="fas fa-crosshairs"></i> Weak Area Quiz</button>
-                    <button class="btn btn-outline" onclick="showQuizSetup()"><i class="fas fa-cog"></i> New Test</button>
+                    <button type="button" class="btn btn-primary" data-action="review-quiz"><i class="fas fa-search"></i> Review Answers</button>
+                    <button type="button" class="btn btn-warning" data-action="review-wrong-only"><i class="fas fa-exclamation-triangle"></i> Wrong Only</button>
+                    <button type="button" class="btn btn-secondary" data-action="retake-quiz"><i class="fas fa-redo"></i> Retake Test</button>
+                    <button type="button" class="btn btn-success" data-action="start-weak-area-quiz"><i class="fas fa-crosshairs"></i> Weak Area Quiz</button>
+                    <button type="button" class="btn btn-outline" data-action="show-quiz-setup"><i class="fas fa-cog"></i> New Test</button>
                 </div>
                 <div id="reviewSection" class="review-section" style="display:none;"></div>
             </div>
@@ -329,49 +363,49 @@
 
             <div id="tab-concepts" class="study-content active">
                 <div class="study-grid">
-                    <div class="study-card" onclick="openStudyTopic('quant')">
+                    <div class="study-card" data-action="open-study-topic" data-topic="quant" role="button" tabindex="0">
                         <div class="study-icon" style="background: #667eea;">🔢</div>
                         <h4>Quantitative Aptitude</h4>
                         <p>Speed, Profit/Loss, Ratios, SI/CI, Percentages</p>
                         <div class="study-meta"><span>45+ formulas</span><span>Key shortcuts</span></div>
                     </div>
-                    <div class="study-card" onclick="openStudyTopic('reasoning')">
+                    <div class="study-card" data-action="open-study-topic" data-topic="reasoning" role="button" tabindex="0">
                         <div class="study-icon" style="background: #f5576c;">🧩</div>
                         <h4>Logical Reasoning</h4>
                         <p>Series, Blood Relations, Coding-Decoding, Syllogisms</p>
                         <div class="study-meta"><span>Pattern tricks</span><span>Practice sets</span></div>
                     </div>
-                    <div class="study-card" onclick="openStudyTopic('verbal')">
+                    <div class="study-card" data-action="open-study-topic" data-topic="verbal" role="button" tabindex="0">
                         <div class="study-icon" style="background: #43e97b;">📝</div>
                         <h4>Verbal Ability</h4>
                         <p>Synonyms, Antonyms, Grammar, Reading Comprehension</p>
                         <div class="study-meta"><span>Word lists</span><span>Grammar rules</span></div>
                     </div>
-                    <div class="study-card" onclick="openStudyTopic('programming')">
+                    <div class="study-card" data-action="open-study-topic" data-topic="programming" role="button" tabindex="0">
                         <div class="study-icon" style="background: #4facfe;">💻</div>
                         <h4>Programming Logic</h4>
                         <p>Pseudocode, Output Prediction, OOP, Complexity</p>
                         <div class="study-meta"><span>Java/Python/C</span><span>Code tracing</span></div>
                     </div>
-                    <div class="study-card" onclick="openStudyTopic('dbms')">
+                    <div class="study-card" data-action="open-study-topic" data-topic="dbms" role="button" tabindex="0">
                         <div class="study-icon" style="background: #fa709a;">🗃️</div>
                         <h4>DBMS & SQL</h4>
                         <p>SQL Queries, Normalization, Joins, Transactions</p>
                         <div class="study-meta"><span>Query practice</span><span>ER diagrams</span></div>
                     </div>
-                    <div class="study-card" onclick="openStudyTopic('os')">
+                    <div class="study-card" data-action="open-study-topic" data-topic="os" role="button" tabindex="0">
                         <div class="study-icon" style="background: #a18cd1;">⚙️</div>
                         <h4>Operating Systems</h4>
                         <p>Process, Memory, Deadlocks, Scheduling, Virtual Memory</p>
                         <div class="study-meta"><span>Key concepts</span><span>Diagrams</span></div>
                     </div>
-                    <div class="study-card" onclick="openStudyTopic('networks')">
+                    <div class="study-card" data-action="open-study-topic" data-topic="networks" role="button" tabindex="0">
                         <div class="study-icon" style="background: #fbc2eb;">🌐</div>
                         <h4>Computer Networks</h4>
                         <p>OSI Model, TCP/IP, HTTP, DNS, REST APIs</p>
                         <div class="study-meta"><span>Protocol comparison</span><span>Diagrams</span></div>
                     </div>
-                    <div class="study-card" onclick="openStudyTopic('sysdesign')">
+                    <div class="study-card" data-action="open-study-topic" data-topic="sysdesign" role="button" tabindex="0">
                         <div class="study-icon" style="background: #f093fb;">🏗️</div>
                         <h4>System Design Basics</h4>
                         <p>URL Shortener, Docker, Microservices, Caching</p>
@@ -389,7 +423,7 @@
                 <div class="modal-content large-modal">
                     <div class="modal-header">
                         <h2 id="studyModalTitle"></h2>
-                        <button class="close-btn" onclick="closeStudyModal()">&times;</button>
+                        <button type="button" class="close-btn" data-action="close-study-modal">&times;</button>
                     </div>
                     <div class="modal-body" id="studyModalBody"></div>
                 </div>
@@ -415,7 +449,7 @@
             <div class="flashcard-controls">
                 <h2><i class="fas fa-clone"></i> Flashcards</h2>
                 <div class="fc-topic-select">
-                    <select id="fcTopicSelect" onchange="loadFlashcards()">
+                    <select id="fcTopicSelect">
                         <option value="all">All Topics</option>
                         <option value="quantitative">Quantitative Formulas</option>
                         <option value="programming">Programming Concepts</option>
@@ -427,8 +461,8 @@
                 </div>
             </div>
             <div class="flashcard-container">
-                <button class="fc-nav-btn" onclick="prevFlashcard()"><i class="fas fa-chevron-left"></i></button>
-                <div class="flashcard" id="flashcard" onclick="flipFlashcard()">
+                <button type="button" class="fc-nav-btn" data-action="prev-flashcard"><i class="fas fa-chevron-left"></i></button>
+                <div class="flashcard" id="flashcard" data-action="flip-flashcard" role="button" tabindex="0">
                     <div class="flashcard-inner" id="flashcardInner">
                         <div class="flashcard-front" id="flashcardFront">
                             <span class="fc-hint">Click to flip</span>
@@ -439,20 +473,20 @@
                         </div>
                     </div>
                 </div>
-                <button class="fc-nav-btn" onclick="nextFlashcard()"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" class="fc-nav-btn" data-action="next-flashcard"><i class="fas fa-chevron-right"></i></button>
             </div>
             <div class="fc-progress">
                 <span id="fcCounter">1 / 1</span>
                 <div class="fc-actions">
-                    <button class="btn btn-sm btn-danger" onclick="markFlashcard('hard')"><i class="fas fa-times"></i> Hard</button>
-                    <button class="btn btn-sm btn-warning" onclick="markFlashcard('medium')"><i class="fas fa-minus"></i> Okay</button>
-                    <button class="btn btn-sm btn-success" onclick="markFlashcard('easy')"><i class="fas fa-check"></i> Easy</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-action="mark-flashcard" data-difficulty="hard"><i class="fas fa-times"></i> Hard</button>
+                    <button type="button" class="btn btn-sm btn-warning" data-action="mark-flashcard" data-difficulty="medium"><i class="fas fa-minus"></i> Okay</button>
+                    <button type="button" class="btn btn-sm btn-success" data-action="mark-flashcard" data-difficulty="easy"><i class="fas fa-check"></i> Easy</button>
                 </div>
             </div>
             <div class="fc-extras">
                 <div class="fc-mode-toggle">
                     <label class="toggle-label">
-                        <input type="checkbox" id="spacedRepToggle" onchange="toggleSpacedRepetition()">
+                        <input type="checkbox" id="spacedRepToggle">
                         <span class="toggle-slider"></span>
                         <span>Spaced Repetition Mode</span>
                     </label>
@@ -475,7 +509,7 @@
                     </select>
                     <input type="text" id="customFcFront" placeholder="Front (question/term)..." class="fc-input">
                     <textarea id="customFcBack" placeholder="Back (answer/explanation)..." rows="3" class="fc-input"></textarea>
-                    <button class="btn btn-primary btn-sm" onclick="addCustomFlashcard()"><i class="fas fa-plus"></i> Add Card</button>
+                    <button type="button" class="btn btn-primary btn-sm" data-action="add-custom-flashcard"><i class="fas fa-plus"></i> Add Card</button>
                 </div>
                 <div id="customFcList" class="custom-fc-list"></div>
             </div>
@@ -909,14 +943,14 @@
                 </div>
             </div>
             <div class="progress-actions">
-                <button class="btn btn-primary" onclick="exportProgress()">
+                <button type="button" class="btn btn-primary" data-action="export-progress">
                     <i class="fas fa-download"></i> Export Progress
                 </button>
-                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">
+                <button type="button" class="btn btn-secondary" data-action="trigger-import">
                     <i class="fas fa-upload"></i> Import Progress
                 </button>
-                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importProgress(event)">
-                <button class="btn btn-danger" onclick="confirmResetProgress()">
+                <input type="file" id="importFile" accept=".json" style="display:none">
+                <button type="button" class="btn btn-danger" data-action="confirm-reset-progress">
                     <i class="fas fa-trash"></i> Reset All Progress
                 </button>
             </div>
@@ -946,10 +980,10 @@
                         </div>
                     </div>
                     <div class="pomodoro-controls">
-                        <button class="btn btn-primary" id="pomodoroStartBtn" onclick="togglePomodoro()">
+                        <button type="button" class="btn btn-primary" id="pomodoroStartBtn" data-action="toggle-pomodoro">
                             <i class="fas fa-play"></i> Start
                         </button>
-                        <button class="btn btn-secondary" onclick="resetPomodoro()">
+                        <button type="button" class="btn btn-secondary" data-action="reset-pomodoro">
                             <i class="fas fa-redo"></i> Reset
                         </button>
                         <div class="pomodoro-rounds">
@@ -958,9 +992,9 @@
                     </div>
                 </div>
                 <div class="pomodoro-settings">
-                    <label>Focus: <input type="number" id="focusDuration" value="25" min="1" max="60" onchange="updatePomodoroSettings()"> min</label>
-                    <label>Break: <input type="number" id="breakDuration" value="5" min="1" max="30" onchange="updatePomodoroSettings()"> min</label>
-                    <label>Long Break: <input type="number" id="longBreakDuration" value="15" min="1" max="60" onchange="updatePomodoroSettings()"> min</label>
+                    <label>Focus: <input type="number" id="focusDuration" value="25" min="1" max="60"> min</label>
+                    <label>Break: <input type="number" id="breakDuration" value="5" min="1" max="30"> min</label>
+                    <label>Long Break: <input type="number" id="longBreakDuration" value="15" min="1" max="60"> min</label>
                 </div>
             </div>
 
@@ -978,7 +1012,7 @@
                             <option value="formulas">📐 Formulas</option>
                             <option value="mistakes">⚠️ Mistakes to Avoid</option>
                         </select>
-                        <button class="btn btn-primary btn-sm" onclick="saveNote()">
+                        <button type="button" class="btn btn-primary btn-sm" data-action="save-note">
                             <i class="fas fa-save"></i> Save Note
                         </button>
                     </div>
@@ -992,7 +1026,7 @@
                 <div class="notes-list-header">
                     <h3><i class="fas fa-list"></i> Saved Notes</h3>
                     <div class="notes-filter">
-                        <select id="noteFilterCategory" onchange="renderNotesList()">
+                        <select id="noteFilterCategory">
                             <option value="all">All Categories</option>
                             <option value="general">📝 General</option>
                             <option value="quantitative">🔢 Quantitative</option>
@@ -1018,15 +1052,15 @@
             </div>
 
             <div class="bookmark-filters">
-                <button class="bm-filter active" data-bmfilter="all" onclick="filterBookmarks('all')">All</button>
-                <button class="bm-filter" data-bmfilter="quantitative" onclick="filterBookmarks('quantitative')">🔢 Quant</button>
-                <button class="bm-filter" data-bmfilter="logical" onclick="filterBookmarks('logical')">🧩 Reasoning</button>
-                <button class="bm-filter" data-bmfilter="verbal" onclick="filterBookmarks('verbal')">📝 Verbal</button>
-                <button class="bm-filter" data-bmfilter="programming" onclick="filterBookmarks('programming')">💻 Programming</button>
-                <button class="bm-filter" data-bmfilter="dbms" onclick="filterBookmarks('dbms')">🗃️ DBMS</button>
-                <button class="bm-filter" data-bmfilter="os" onclick="filterBookmarks('os')">⚙️ OS</button>
-                <button class="bm-filter" data-bmfilter="networking" onclick="filterBookmarks('networking')">🌐 Networks</button>
-                <button class="bm-filter" data-bmfilter="dsa" onclick="filterBookmarks('dsa')">🧮 DSA</button>
+                <button type="button" class="bm-filter active" data-action="filter-bookmarks" data-topic="all" data-bmfilter="all">All</button>
+                <button type="button" class="bm-filter" data-action="filter-bookmarks" data-topic="quantitative" data-bmfilter="quantitative">🔢 Quant</button>
+                <button type="button" class="bm-filter" data-action="filter-bookmarks" data-topic="logical" data-bmfilter="logical">🧩 Reasoning</button>
+                <button type="button" class="bm-filter" data-action="filter-bookmarks" data-topic="verbal" data-bmfilter="verbal">📝 Verbal</button>
+                <button type="button" class="bm-filter" data-action="filter-bookmarks" data-topic="programming" data-bmfilter="programming">💻 Programming</button>
+                <button type="button" class="bm-filter" data-action="filter-bookmarks" data-topic="dbms" data-bmfilter="dbms">🗃️ DBMS</button>
+                <button type="button" class="bm-filter" data-action="filter-bookmarks" data-topic="os" data-bmfilter="os">⚙️ OS</button>
+                <button type="button" class="bm-filter" data-action="filter-bookmarks" data-topic="networking" data-bmfilter="networking">🌐 Networks</button>
+                <button type="button" class="bm-filter" data-action="filter-bookmarks" data-topic="dsa" data-bmfilter="dsa">🧮 DSA</button>
             </div>
 
             <div class="bookmark-stats" id="bookmarkStats"></div>
@@ -1035,10 +1069,10 @@
             </div>
 
             <div class="bookmark-actions" id="bookmarkActions" style="display:none;">
-                <button class="btn btn-primary" onclick="startBookmarkQuiz()">
+                <button type="button" class="btn btn-primary" data-action="start-bookmark-quiz">
                     <i class="fas fa-play"></i> Practice Bookmarked Questions
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="clearAllBookmarks()">
+                <button type="button" class="btn btn-danger btn-sm" data-action="clear-bookmarks">
                     <i class="fas fa-trash"></i> Clear All Bookmarks
                 </button>
             </div>
@@ -1049,8 +1083,8 @@
             <h2><i class="fas fa-superscript"></i> Formula Quick-Reference Sheet</h2>
             <p class="page-desc">All essential formulas organized by topic. Print this page for offline revision!</p>
             <div class="formula-actions">
-                <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print Sheet</button>
-                <select id="formulaTopicFilter" onchange="renderFormulaSheet()">
+                <button type="button" class="btn btn-primary btn-sm" data-action="print-sheet"><i class="fas fa-print"></i> Print Sheet</button>
+                <select id="formulaTopicFilter">
                     <option value="all">All Topics</option>
                     <option value="arithmetic">Arithmetic & Numbers</option>
                     <option value="algebra">Algebra & Equations</option>
@@ -1110,11 +1144,11 @@
                 <div class="schedule-form">
                     <div class="form-group">
                         <label>Exam Date:</label>
-                        <input type="date" id="examDateInput" onchange="generateSchedule()">
+                        <input type="date" id="examDateInput">
                     </div>
                     <div class="form-group">
                         <label>Hours per day:</label>
-                        <input type="number" id="hoursPerDay" value="4" min="1" max="12" onchange="generateSchedule()">
+                        <input type="number" id="hoursPerDay" value="4" min="1" max="12">
                     </div>
                     <div class="form-group">
                         <label>Priority Topics (select weak areas):</label>
@@ -1129,7 +1163,7 @@
                             <label><input type="checkbox" value="dsa"> 🧮 DSA</label>
                         </div>
                     </div>
-                    <button class="btn btn-primary" onclick="generateSchedule()"><i class="fas fa-magic"></i> Generate Schedule</button>
+                    <button type="button" class="btn btn-primary" data-action="generate-schedule"><i class="fas fa-magic"></i> Generate Schedule</button>
                 </div>
             </div>
             <div id="scheduleOutput" class="schedule-output"></div>
@@ -1137,7 +1171,7 @@
     </main>
 
     <!-- Scroll to Top Button -->
-    <button class="scroll-top-btn" id="scrollTopBtn" onclick="scrollToTop()" title="Scroll to top">
+    <button type="button" class="scroll-top-btn" id="scrollTopBtn" data-action="scroll-top" title="Scroll to top">
         <i class="fas fa-arrow-up"></i>
     </button>
 
@@ -1146,7 +1180,7 @@
         <div class="modal-content" style="max-width:500px;">
             <div class="modal-header">
                 <h2>⌨️ Keyboard Shortcuts</h2>
-                <button class="close-btn" onclick="document.getElementById('shortcutsModal').style.display='none'">&times;</button>
+                <button type="button" class="close-btn" data-action="close-shortcuts">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="shortcut-list">
@@ -1170,6 +1204,8 @@
 
     <script src="questions-data.js"></script>
     <script src="study-data.js"></script>
+    <script src="app-core.js"></script>
     <script src="app.js"></script>
+    <script src="app-bootstrap.js"></script>
 </body>
 </html>

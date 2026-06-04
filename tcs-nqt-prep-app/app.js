@@ -23,61 +23,6 @@ let state = {
     progress: loadProgress()
 };
 
-function loadProgress() {
-    try {
-        const saved = localStorage.getItem('tcsNqtProgress');
-        if (saved) return JSON.parse(saved);
-    } catch(e) {}
-    return {
-        totalAttempted: 0,
-        totalCorrect: 0,
-        totalTime: 0,
-        testsCompleted: 0,
-        streak: 0,
-        lastStudyDate: null,
-        topicStats: {},
-        testHistory: [],
-        activities: [],
-        flashcardProgress: {},
-        notes: [],
-        bookmarks: []
-    };
-}
-
-function saveProgress() {
-    try {
-        localStorage.setItem('tcsNqtProgress', JSON.stringify(state.progress));
-    } catch(e) {}
-}
-
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', () => {
-    initNavigation();
-    initTheme();
-    updateDashboard();
-    updateStreak();
-    updateCountdown();
-    loadFlashcards();
-    renderInterviewContent('technical');
-    initStudyTabs();
-    initInterviewTabs();
-    initResourceTabs();
-    renderFormulaGrid();
-    renderVideoGrid();
-    renderLinksGrid();
-    renderTopicResourceGrid();
-    renderProgressPage();
-    renderDSATab();
-    renderCodingTab();
-    renderPapersTab();
-    initKeyboardShortcuts();
-    initScrollToTop();
-    renderNotesList();
-    renderBookmarksList();
-    renderCustomFcList();
-    updateFcStats();
-});
-
 // ===== NAVIGATION =====
 function initNavigation() {
     document.querySelectorAll('.nav-links li').forEach(li => {
@@ -144,46 +89,6 @@ function toggleTheme() {
     localStorage.setItem('tcsNqtTheme', isDark ? 'light' : 'dark');
 }
 
-// ===== COUNTDOWN =====
-function updateCountdown() {
-    const now = new Date();
-    // Set exam date to next week from now
-    const examDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const diff = examDate - now;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    document.getElementById('countdownText').textContent = `${days} days to exam`;
-
-    setInterval(() => {
-        const now2 = new Date();
-        const diff2 = examDate - now2;
-        const d = Math.floor(diff2 / (1000 * 60 * 60 * 24));
-        const h = Math.floor((diff2 % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        document.getElementById('countdownText').textContent = `${d}d ${h}h to exam`;
-    }, 60000);
-}
-
-// ===== STREAK =====
-function updateStreak() {
-    const today = new Date().toDateString();
-    const lastDate = state.progress.lastStudyDate;
-
-    if (lastDate === today) {
-        // Already studied today
-    } else if (lastDate) {
-        const last = new Date(lastDate);
-        const diff = Math.floor((new Date(today) - last) / (1000 * 60 * 60 * 24));
-        if (diff === 1) {
-            state.progress.streak++;
-        } else if (diff > 1) {
-            state.progress.streak = 0;
-        }
-    }
-
-    state.progress.lastStudyDate = today;
-    saveProgress();
-    document.getElementById('streakCount').textContent = state.progress.streak;
-}
-
 // ===== DASHBOARD =====
 function updateDashboard() {
     const p = state.progress;
@@ -248,11 +153,11 @@ function renderWeakAreas() {
         container.innerHTML = '<p class="empty-state">Take a few quizzes to see your weak areas.</p>';
     } else {
         container.innerHTML = weak.sort((a,b) => a.pct - b.pct).map(w => `
-            <div class="weak-area-item" onclick="startQuickTest('${w.key}')">
+            <button type="button" class="weak-area-item" data-action="start-quick-test" data-topic="${w.key}">
                 <span>${w.icon}</span>
                 <span>${w.name}</span>
                 <span style="margin-left:auto;font-weight:700;color:var(--danger);">${w.pct}%</span>
-            </div>
+            </button>
         `).join('');
     }
 }
@@ -265,7 +170,7 @@ function startQuiz() {
     });
 
     if (selectedTopics.length === 0) {
-        alert('Please select at least one topic.');
+        showToast('Please select at least one topic.', 'warning');
         return;
     }
 
@@ -282,30 +187,47 @@ function startQuiz() {
     pool = shuffleArray(pool).slice(0, Math.min(numQ, pool.length));
 
     if (pool.length === 0) {
-        alert('No questions available for the selected criteria.');
+        showToast('No questions match the selected filters.', 'warning');
         return;
     }
 
+    launchQuizPool(pool, {
+        timeLimitSeconds: timeLimit * 60,
+        instantFeedback,
+        shuffle: false
+    });
+}
+
+function launchQuizPool(pool, options = {}) {
+    const questions = options.shuffle === false ? [...pool] : shuffleArray(pool);
+    if (questions.length === 0) {
+        showToast('No questions available.', 'warning');
+        return false;
+    }
+
     state.quiz = {
-        questions: pool,
+        questions,
         currentIndex: 0,
         answers: {},
         startTime: Date.now(),
-        timeLimit: timeLimit * 60,
+        timeLimit: options.timeLimitSeconds || 0,
         timerInterval: null,
         submitted: false,
-        instantFeedback: instantFeedback
+        instantFeedback: options.instantFeedback !== false
     };
 
+    navigateTo('quiz');
     document.getElementById('quizSetup').style.display = 'none';
     document.getElementById('quizActive').style.display = 'block';
     document.getElementById('quizResults').style.display = 'none';
+    document.getElementById('reviewSection').style.display = 'none';
 
-    document.getElementById('qTotal').textContent = pool.length;
+    document.getElementById('qTotal').textContent = questions.length;
     renderQuestion();
     renderNavigator();
 
-    if (timeLimit > 0) startTimer();
+    if (state.quiz.timeLimit > 0) startTimer();
+    return true;
 }
 
 function startQuickTest(type) {
@@ -313,7 +235,7 @@ function startQuickTest(type) {
         // Select all topics, 100 questions, 150 minutes
         document.querySelectorAll('#topicCheckboxes input').forEach(cb => cb.checked = true);
         document.querySelector('input[name="numQ"][value="100"]').checked = true;
-        document.querySelector('input[name="timeLimit"][value="90"]').checked = true;
+        document.querySelector('input[name="timeLimit"][value="150"]').checked = true;
     } else {
         document.querySelectorAll('#topicCheckboxes input').forEach(cb => {
             cb.checked = (cb.value === type);
@@ -352,7 +274,7 @@ function renderQuestion() {
             else if (selected && i !== q.answer) cls += ' wrong';
         }
 
-        return `<button class="${cls}" onclick="selectAnswer(${q.id}, ${i})">
+        return `<button type="button" class="${cls}" data-action="select-answer" data-question-id="${q.id}" data-option-index="${i}">
             <span class="option-letter">${letters[i]}</span>
             <span>${opt}</span>
         </button>`;
@@ -413,7 +335,7 @@ function goToQuestion(idx) {
 function renderNavigator() {
     const nav = document.getElementById('qNavigator');
     nav.innerHTML = state.quiz.questions.map((q, i) => {
-        return `<div class="q-nav-dot" onclick="goToQuestion(${i})">${i + 1}</div>`;
+        return `<button type="button" class="q-nav-dot" data-action="go-to-question" data-question-index="${i}" aria-label="Go to question ${i + 1}">${i + 1}</button>`;
     }).join('');
 }
 
@@ -514,23 +436,13 @@ function submitQuiz() {
         score: percent,
         correct, wrong, skipped,
         total,
+        durationSeconds: timeTaken,
         time: formatTime(timeTaken),
-        topics: Object.keys(topicResults).map(t => TOPIC_META[t]?.icon || '').join(' ')
+        topics: Object.keys(topicResults).map(t => TOPIC_META[t]?.icon || '').join(' '),
+        topicBreakdown: topicResults
     });
 
-    state.progress.activities.push({
-        icon: percent >= 70 ? '🎉' : '📝',
-        text: `Scored ${percent}% (${correct}/${total}) in quiz`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-
-    // Keep last 50 activities
-    if (state.progress.activities.length > 50) {
-        state.progress.activities = state.progress.activities.slice(-50);
-    }
-
-    saveProgress();
-    updateStreak();
+    recordStudyAction(percent >= 70 ? '🎉' : '📝', `Scored ${percent}% (${correct}/${total}) in quiz`);
     showResults(percent, correct, wrong, skipped, timeTaken, topicResults);
 }
 
@@ -658,14 +570,7 @@ function openStudyTopic(topicKey) {
 
     document.getElementById('studyModalBody').innerHTML = html;
     document.getElementById('studyModal').style.display = 'flex';
-
-    // Track activity
-    state.progress.activities.push({
-        icon: '📖',
-        text: `Studied: ${topic.title}`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-    saveProgress();
+    recordStudyAction('📖', `Studied: ${topic.title}`);
 }
 
 function closeStudyModal() {
@@ -814,10 +719,10 @@ function renderInterviewContent(round) {
     const container = document.getElementById('interviewContent');
     container.innerHTML = data.map((item, i) => `
         <div class="interview-item">
-            <div class="interview-question" onclick="toggleIntAnswer(this)">
+            <button type="button" class="interview-question" data-action="toggle-interview-answer" aria-expanded="false">
                 <span>Q${i + 1}. ${item.q}</span>
                 <span class="diff-badge ${item.difficulty.toLowerCase()}">${item.difficulty}</span>
-            </div>
+            </button>
             <div class="interview-answer">
                 <p>${item.a}</p>
                 ${item.tip ? `<div class="interview-tip">💡 Tip: ${item.tip}</div>` : ''}
@@ -829,6 +734,7 @@ function renderInterviewContent(round) {
 function toggleIntAnswer(el) {
     const answer = el.nextElementSibling;
     answer.classList.toggle('open');
+    el.setAttribute('aria-expanded', answer.classList.contains('open') ? 'true' : 'false');
 }
 
 // ===== FLASHCARDS =====
@@ -1239,9 +1145,13 @@ function confirmResetProgress() {
         if (confirm('Really? All your quiz scores, streaks, and progress will be lost.')) {
             localStorage.removeItem('tcsNqtProgress');
             state.progress = loadProgress();
+            syncExamDateInputs();
             updateDashboard();
             renderProgressPage();
-            alert('Progress has been reset.');
+            updateStreakBadge();
+            updateCountdown();
+            renderAnalytics();
+            showToast('Progress has been reset.', 'success');
         }
     }
 }
@@ -1411,28 +1321,24 @@ function onPomodoroComplete() {
     if (pomodoroState.mode === 'focus') {
         // Track focus time
         state.progress.totalTime += pomodoroState.focusDuration * 60;
-        state.progress.activities.push({
-            icon: '🍅',
-            text: `Completed ${pomodoroState.focusDuration}min focus session (Round ${pomodoroState.round})`,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
-        saveProgress();
+        state.progress.pomodoroSessionsCompleted = (state.progress.pomodoroSessionsCompleted || 0) + 1;
+        recordStudyAction('🍅', `Completed ${pomodoroState.focusDuration}min focus session (Round ${pomodoroState.round})`);
 
         if (pomodoroState.round >= 4) {
             pomodoroState.mode = 'longbreak';
             pomodoroState.remaining = pomodoroState.longBreakDuration * 60;
             pomodoroState.round = 1;
-            alert('Great work! 4 rounds done. Take a long break!');
+            showToast('Great work. Four focus rounds done. Take a long break.', 'success');
         } else {
             pomodoroState.mode = 'break';
             pomodoroState.remaining = pomodoroState.breakDuration * 60;
             pomodoroState.round++;
-            alert('Focus session done! Take a short break.');
+            showToast('Focus session done. Take a short break.', 'success');
         }
     } else {
         pomodoroState.mode = 'focus';
         pomodoroState.remaining = pomodoroState.focusDuration * 60;
-        alert('Break over! Ready for another focus session?');
+        showToast('Break over. Ready for another focus session?', 'info');
     }
 
     updatePomodoroDisplay();
@@ -1490,7 +1396,7 @@ function saveNote() {
     const content = document.getElementById('noteContent').value.trim();
     const category = document.getElementById('noteCategory').value;
 
-    if (!content) { alert('Please write something before saving.'); return; }
+    if (!content) { showToast('Please write something before saving.', 'warning'); return; }
 
     if (!state.progress.notes) state.progress.notes = [];
 
@@ -1506,13 +1412,8 @@ function saveNote() {
     document.getElementById('noteTitle').value = '';
     document.getElementById('noteContent').value = '';
     renderNotesList();
-
-    state.progress.activities.push({
-        icon: '📝',
-        text: `Saved note: ${title || 'Untitled'}`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    });
-    saveProgress();
+    recordStudyAction('📝', `Saved note: ${title || 'Untitled'}`);
+    showToast('Note saved.', 'success');
 }
 
 function renderNotesList() {
@@ -1540,7 +1441,7 @@ function renderNotesList() {
             <div class="note-item-header">
                 <span class="note-category-badge">${categoryLabels[n.category] || '📝'} ${n.category}</span>
                 <span class="note-date">${n.date}</span>
-                <button class="note-delete-btn" onclick="deleteNote(${n.id})" title="Delete note">
+                <button type="button" class="note-delete-btn" data-action="delete-note" data-note-id="${n.id}" title="Delete note">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -1634,7 +1535,7 @@ function renderBookmarksList(filterTopic) {
             <div class="bm-item-header">
                 <span class="bm-topic-badge">${TOPIC_META[q.topic]?.icon || ''} ${TOPIC_META[q.topic]?.name || q.topic}</span>
                 <span class="diff-badge ${q.difficulty}">${q.difficulty}</span>
-                <button class="bm-remove-btn" onclick="removeBookmark(${q.id})" title="Remove bookmark">
+                <button type="button" class="bm-remove-btn" data-action="remove-bookmark" data-question-id="${q.id}" title="Remove bookmark">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1670,33 +1571,15 @@ function clearAllBookmarks() {
 
 function startBookmarkQuiz() {
     if (!state.progress.bookmarks || state.progress.bookmarks.length === 0) {
-        alert('No bookmarked questions to practice.');
+        showToast('No bookmarked questions to practice.', 'warning');
         return;
     }
 
-    navigateTo('quiz');
-
-    let pool = QUESTION_BANK.filter(q => state.progress.bookmarks.includes(q.id));
-    pool = shuffleArray(pool);
-
-    state.quiz = {
-        questions: pool,
-        currentIndex: 0,
-        answers: {},
-        startTime: Date.now(),
-        timeLimit: 0,
-        timerInterval: null,
-        submitted: false,
+    const pool = QUESTION_BANK.filter(q => state.progress.bookmarks.includes(q.id));
+    launchQuizPool(pool, {
+        timeLimitSeconds: 0,
         instantFeedback: true
-    };
-
-    document.getElementById('quizSetup').style.display = 'none';
-    document.getElementById('quizActive').style.display = 'block';
-    document.getElementById('quizResults').style.display = 'none';
-
-    document.getElementById('qTotal').textContent = pool.length;
-    renderQuestion();
-    renderNavigator();
+    });
 }
 
 // Override renderQuestion to also update bookmark icon
@@ -1759,7 +1642,7 @@ function performSearch(query) {
     // Search flashcards
     FLASHCARD_DATA.forEach((fc, i) => {
         if (fc.front.toLowerCase().includes(q) || fc.back.toLowerCase().includes(q)) {
-            matches.push({ type: 'flashcard', icon: '🃏', text: fc.front, topic: fc.topic, idx: i });
+            matches.push({ type: 'flashcard', icon: '🃏', text: fc.front, topic: fc.topic, idx: i, value: encodeURIComponent(fc.front) });
         }
     });
 
@@ -1767,11 +1650,11 @@ function performSearch(query) {
     if (typeof STUDY_MATERIALS !== 'undefined') {
         for (const [key, mat] of Object.entries(STUDY_MATERIALS)) {
             if (mat.title.toLowerCase().includes(q)) {
-                matches.push({ type: 'study', icon: '📖', text: mat.title, topic: key, action: `openStudyTopic('${key}')` });
+                matches.push({ type: 'study', icon: '📖', text: mat.title, topic: key, key });
             }
             mat.sections?.forEach(s => {
                 if (s.heading.toLowerCase().includes(q)) {
-                    matches.push({ type: 'study', icon: '📖', text: `${mat.title} → ${s.heading}`, topic: key, action: `openStudyTopic('${key}')` });
+                    matches.push({ type: 'study', icon: '📖', text: `${mat.title} → ${s.heading}`, topic: key, key });
                 }
             });
         }
@@ -1781,7 +1664,7 @@ function performSearch(query) {
     const customCards = JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]');
     customCards.forEach((fc, i) => {
         if (fc.front.toLowerCase().includes(q) || fc.back.toLowerCase().includes(q)) {
-            matches.push({ type: 'flashcard', icon: '✏️', text: fc.front, topic: 'Custom' });
+            matches.push({ type: 'flashcard', icon: '✏️', text: fc.front, topic: 'Custom', idx: i, value: encodeURIComponent(fc.front) });
         }
     });
 
@@ -1793,14 +1676,51 @@ function performSearch(query) {
     }
 
     results.innerHTML = shown.map(m => `
-        <div class="search-result-item" onclick="${m.type === 'study' ? m.action : m.type === 'question' ? `closeSearch();navigateTo('quiz')` : `closeSearch();navigateTo('flashcards')`}">
+        <button type="button" class="search-result-item" data-action="open-search-result" data-result-type="${m.type}" data-result-id="${m.id || ''}" data-result-index="${m.idx ?? ''}" data-result-topic="${m.key || ''}" data-result-value="${m.value || ''}">
             <span class="sr-icon">${m.icon}</span>
             <div class="sr-text">
                 <span class="sr-title">${highlightMatch(escapeHtml(m.text.substring(0, 100)), query)}</span>
                 <span class="sr-meta">${m.topic}</span>
             </div>
-        </div>
+        </button>
     `).join('') + (matches.length > 20 ? `<div class="search-more">...and ${matches.length - 20} more results</div>` : '');
+}
+
+function openSearchResult(type, payload) {
+    closeSearch();
+    if (type === 'study' && payload.topicKey) {
+        navigateTo('study');
+        openStudyTopic(payload.topicKey);
+        return;
+    }
+
+    if (type === 'flashcard') {
+        navigateTo('flashcards');
+        const frontText = payload.value ? decodeURIComponent(payload.value) : '';
+        const targetIndex = state.flashcard.cards.findIndex((card) => card.front === frontText);
+        if (targetIndex >= 0) {
+            state.flashcard.currentIndex = targetIndex;
+            state.flashcard.flipped = false;
+            renderFlashcard();
+        }
+        return;
+    }
+
+    if (type === 'question') {
+        const question = QUESTION_BANK.find(item => item.id === payload.id);
+        if (!question) return;
+
+        document.querySelectorAll('#topicCheckboxes input').forEach(cb => {
+            cb.checked = cb.value === question.topic;
+        });
+        document.querySelector('input[name="numQ"][value="25"]').checked = true;
+        navigateTo('quiz');
+        launchQuizPool([question], {
+            timeLimitSeconds: 0,
+            instantFeedback: true,
+            shuffle: false
+        });
+    }
 }
 
 function highlightMatch(text, query) {
@@ -1888,7 +1808,7 @@ function addCustomFlashcard() {
     const back = document.getElementById('customFcBack').value.trim();
     const topic = document.getElementById('customFcTopic').value;
 
-    if (!front || !back) { alert('Please fill in both front and back of the card.'); return; }
+    if (!front || !back) { showToast('Please fill in both front and back of the card.', 'warning'); return; }
 
     const customCards = JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]');
     customCards.push({ front, back, topic, id: Date.now() });
@@ -1899,6 +1819,7 @@ function addCustomFlashcard() {
 
     renderCustomFcList();
     loadFlashcards(); // Refresh deck with new card
+    showToast('Custom flashcard added.', 'success');
 }
 
 function renderCustomFcList() {
@@ -1910,7 +1831,7 @@ function renderCustomFcList() {
         cards.slice(-5).reverse().map(c => `
         <div class="custom-fc-item">
             <span>${escapeHtml(c.front.substring(0, 40))}${c.front.length > 40 ? '...' : ''}</span>
-            <button class="btn-icon" onclick="deleteCustomFc(${c.id})"><i class="fas fa-trash"></i></button>
+            <button type="button" class="btn-icon" data-action="delete-custom-flashcard" data-card-id="${c.id}" aria-label="Delete custom flashcard"><i class="fas fa-trash"></i></button>
         </div>
     `).join('');
 }
@@ -1950,7 +1871,7 @@ function importProgress(event) {
         try {
             const data = JSON.parse(e.target.result);
             if (!data.progress || !data.version) {
-                alert('Invalid backup file format.');
+                showToast('Invalid backup file format.', 'error');
                 return;
             }
             if (!confirm('This will replace your current progress. Continue?')) return;
@@ -1965,10 +1886,11 @@ function importProgress(event) {
                 localStorage.setItem('tcsNqtTheme', data.theme);
             }
 
-            alert('Progress imported successfully! Refreshing...');
-            location.reload();
+            syncExamDateInputs();
+            showToast('Progress imported successfully. Refreshing…', 'success');
+            window.setTimeout(() => location.reload(), 700);
         } catch (err) {
-            alert('Error reading file: ' + err.message);
+            showToast(`Error reading file: ${err.message}`, 'error');
         }
     };
     reader.readAsText(file);
@@ -1989,33 +1911,19 @@ function startWeakAreaQuiz() {
     }
 
     if (weakTopics.length === 0) {
-        alert('Great job! No weak areas found. All topics are above 70%. Try a full mock test instead.');
+        showToast('No weak areas found. Try a full mock test instead.', 'success');
         return;
     }
 
     let pool = QUESTION_BANK.filter(q => weakTopics.includes(q.topic));
     pool = shuffleArray(pool).slice(0, 25);
 
-    if (pool.length === 0) { alert('No questions available.'); return; }
+    if (pool.length === 0) { showToast('No questions available for weak-area practice.', 'warning'); return; }
 
-    navigateTo('quiz');
-    state.quiz = {
-        questions: pool,
-        currentIndex: 0,
-        answers: {},
-        startTime: Date.now(),
-        timeLimit: 0,
-        timerInterval: null,
-        submitted: false,
+    launchQuizPool(pool, {
+        timeLimitSeconds: 0,
         instantFeedback: true
-    };
-
-    document.getElementById('quizSetup').style.display = 'none';
-    document.getElementById('quizActive').style.display = 'block';
-    document.getElementById('quizResults').style.display = 'none';
-    document.getElementById('qTotal').textContent = pool.length;
-    renderQuestion();
-    renderNavigator();
+    });
 }
 
 // ===== QUIZ REVIEW MODE (WRONG ONLY) =====
@@ -2349,30 +2257,27 @@ function renderActivityHeatmap() {
     const container = document.getElementById('activityHeatmap');
     if (!container) return;
 
-    // Build activity map from activities list (last 84 days)
     const activityByDate = {};
     state.progress.activities.forEach(a => {
-        // Extract date from the activity (approximate from recent activities)
-        const today = new Date().toDateString();
-        if (!activityByDate[today]) activityByDate[today] = 0;
-        activityByDate[today]++;
+        const key = a.dateKey || getDateKey(new Date());
+        activityByDate[key] = (activityByDate[key] || 0) + 1;
     });
 
-    // Also count from test history
     state.progress.testHistory.forEach(h => {
-        if (!activityByDate[h.date]) activityByDate[h.date] = 0;
-        activityByDate[h.date] += 2;
+        const key = h.dateKey || null;
+        if (key) {
+            activityByDate[key] = (activityByDate[key] || 0) + 1;
+        }
     });
 
-    // Generate 84 days grid (12 weeks × 7 days)
     const today = new Date();
     let html = '<div class="heatmap-grid">';
     for (let week = 11; week >= 0; week--) {
         for (let day = 0; day < 7; day++) {
             const d = new Date(today);
             d.setDate(d.getDate() - (week * 7 + (6 - day)));
-            const dateStr = d.toLocaleDateString();
-            const count = activityByDate[dateStr] || 0;
+            const dateKey = getDateKey(d);
+            const count = activityByDate[dateKey] || 0;
             let level = 0;
             if (count >= 5) level = 4;
             else if (count >= 3) level = 3;
@@ -2396,9 +2301,9 @@ function renderAchievements() {
         { icon: '💯', title: 'Perfect Score', desc: 'Score 100% on a quiz', done: p.testHistory.some(h => h.score === 100) },
         { icon: '📚', title: '100 Questions', desc: 'Answer 100 questions', done: p.totalAttempted >= 100 },
         { icon: '🏆', title: '10 Tests Done', desc: 'Complete 10 quizzes', done: p.testsCompleted >= 10 },
-        { icon: '⚡', title: 'Speed Demon', desc: 'Finish a 25Q test under 10 min', done: p.testHistory.some(h => h.total >= 25 && parseInt(h.time) < 10) },
+        { icon: '⚡', title: 'Speed Demon', desc: 'Finish a 25Q test under 10 min', done: p.testHistory.some(h => h.total >= 25 && h.durationSeconds > 0 && h.durationSeconds < 600) },
         { icon: '🧠', title: 'All Topics', desc: 'Attempt all 8 topics', done: Object.keys(p.topicStats).length >= 8 },
-        { icon: '🍅', title: 'Focus Master', desc: 'Complete 4 Pomodoro rounds', done: p.totalTime >= 100 * 60 },
+        { icon: '🍅', title: 'Focus Master', desc: 'Complete 4 Pomodoro rounds', done: (p.pomodoroSessionsCompleted || 0) >= 4 },
         { icon: '📝', title: 'Note Taker', desc: 'Save 10 notes', done: (p.notes?.length || 0) >= 10 },
         { icon: '⭐', title: '70% Average', desc: 'Maintain 70%+ overall accuracy', done: p.totalAttempted > 20 && (p.totalCorrect / p.totalAttempted) >= 0.7 },
         { icon: '🎓', title: '300 Questions', desc: 'Answer 300 questions', done: p.totalAttempted >= 300 },
@@ -2422,29 +2327,36 @@ function renderTimeChart() {
     if (!container) return;
 
     const topicTimes = {};
-    state.progress.testHistory.forEach(h => {
-        // Estimate time per topic from test data
-        const timeVal = parseInt(h.time) || 0;
-        const topicsArr = Object.keys(TOPIC_META);
-        topicsArr.forEach(t => {
-            if (!topicTimes[t]) topicTimes[t] = 0;
+    Object.keys(TOPIC_META).forEach(topic => {
+        topicTimes[topic] = 0;
+    });
+
+    state.progress.testHistory.forEach(historyItem => {
+        const duration = historyItem.durationSeconds || parseTimeLabelToSeconds(historyItem.time);
+        const breakdown = historyItem.topicBreakdown || {};
+        const totalQuestions = Object.values(breakdown).reduce((sum, item) => sum + (item.total || 0), 0);
+
+        if (!duration || !totalQuestions) return;
+
+        Object.entries(breakdown).forEach(([topic, info]) => {
+            const questionCount = info.total || 0;
+            topicTimes[topic] = (topicTimes[topic] || 0) + (duration * (questionCount / totalQuestions));
         });
     });
 
-    // Use topic stats as proxy for time distribution
-    const totalAttempted = state.progress.totalAttempted || 1;
+    const maxTime = Math.max(...Object.values(topicTimes), 0);
     let html = '<div class="time-bars">';
     for (const [key, meta] of Object.entries(TOPIC_META)) {
-        const stats = state.progress.topicStats[key] || { attempted: 0 };
-        const pct = Math.round((stats.attempted / totalAttempted) * 100);
+        const topicSeconds = Math.round(topicTimes[key] || 0);
+        const pct = maxTime > 0 ? Math.max(8, Math.round((topicSeconds / maxTime) * 100)) : 0;
         html += `<div class="time-bar-row">
             <span class="time-bar-label">${meta.icon} ${meta.name}</span>
             <div class="time-bar-track"><div class="time-bar-fill" style="width:${pct}%;background:${meta.color};"></div></div>
-            <span class="time-bar-value">${stats.attempted}q</span>
+            <span class="time-bar-value">${topicSeconds > 0 ? formatTime(topicSeconds) : '0m'}</span>
         </div>`;
     }
     html += '</div>';
-    container.innerHTML = html || '<p class="empty-state">Take tests to see time distribution.</p>';
+    container.innerHTML = maxTime > 0 ? html : '<p class="empty-state">Take tests to see time distribution.</p>';
 }
 
 // ===== REVISION SCHEDULE GENERATOR =====
@@ -2452,6 +2364,14 @@ function generateSchedule() {
     const examDateStr = document.getElementById('examDateInput').value;
     const hoursPerDay = parseInt(document.getElementById('hoursPerDay').value) || 4;
     const container = document.getElementById('scheduleOutput');
+
+    state.progress.scheduleHoursPerDay = hoursPerDay;
+    if (state.progress.examDate !== examDateStr) {
+        state.progress.examDate = examDateStr || '';
+        saveProgress();
+        syncExamDateInputs();
+        updateCountdown();
+    }
 
     if (!examDateStr) {
         container.innerHTML = '<p class="empty-state">Please select your exam date to generate a schedule.</p>';

@@ -4,7 +4,9 @@
 
 :root {
     --bg: #f0f2f5;
+    --bg-secondary: #e5eaf3;
     --bg-card: #ffffff;
+    --card-bg: #ffffff;
     --bg-sidebar: #1a1a2e;
     --text: #1a1a2e;
     --text-secondary: #6b7280;
@@ -24,7 +26,9 @@
 
 [data-theme="dark"] {
     --bg: #0f172a;
+    --bg-secondary: #162235;
     --bg-card: #1e293b;
+    --card-bg: #1e293b;
     --text: #f1f5f9;
     --text-secondary: #94a3b8;
     --primary: #6366f1;
@@ -35,6 +39,8 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+[hidden] { display: none !important; }
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -174,6 +180,25 @@ body {
     font-weight: 600;
 }
 
+.install-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid rgba(67, 97, 238, 0.18);
+    background: rgba(67, 97, 238, 0.08);
+    color: var(--primary);
+    border-radius: 999px;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.install-btn:hover {
+    background: rgba(67, 97, 238, 0.16);
+}
+
 .theme-toggle {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -214,6 +239,62 @@ body {
 
 .welcome-text h1 { font-size: 1.6rem; margin-bottom: 0.3rem; }
 .welcome-text p { opacity: 0.9; font-size: 0.95rem; }
+
+.exam-planner-card {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(16, 185, 129, 0.08));
+    border: 1px solid rgba(67, 97, 238, 0.12);
+}
+
+.exam-planner-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.4rem;
+}
+
+.exam-planner-card h3 {
+    margin-bottom: 0.5rem;
+}
+
+.exam-planner-card p {
+    max-width: 640px;
+    color: var(--text-secondary);
+}
+
+.exam-planner-meta {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.exam-date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 220px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.exam-date-field input {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    background: var(--bg-card);
+    color: var(--text);
+    font: inherit;
+}
+
+.exam-date-field input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
 
 .stats-grid {
     display: grid;
@@ -333,14 +414,18 @@ body {
 
 .weak-area-item {
     background: var(--bg);
+    border: none;
     border-radius: 8px;
     padding: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-size: 0.85rem;
+    color: var(--text);
     cursor: pointer;
     transition: var(--transition);
+    text-align: left;
+    width: 100%;
 }
 
 .weak-area-item:hover { background: var(--primary-light); }
@@ -850,6 +935,8 @@ body {
 }
 
 .interview-question {
+    background: none;
+    border: none;
     padding: 1rem 1.25rem;
     cursor: pointer;
     display: flex;
@@ -858,6 +945,9 @@ body {
     font-weight: 600;
     font-size: 0.92rem;
     transition: var(--transition);
+    width: 100%;
+    text-align: left;
+    color: var(--text);
 }
 
 .interview-question:hover { background: var(--bg); }
@@ -2106,9 +2196,64 @@ kbd {
 }
 
 /* Better focus styles for accessibility */
-.btn:focus-visible, .option-btn:focus-visible, .bookmark-btn:focus-visible, .note-select:focus-visible {
+.btn:focus-visible, .option-btn:focus-visible, .bookmark-btn:focus-visible, .note-select:focus-visible, .search-result-item:focus-visible, .q-nav-dot:focus-visible, .study-card:focus-visible, .pomodoro-mini:focus-visible, [data-action][role="button"]:focus-visible, .interview-question:focus-visible, .weak-area-item:focus-visible, .bm-filter:focus-visible, .fc-nav-btn:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
+}
+
+.toast-container {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 11000;
+}
+
+.toast {
+    min-width: 260px;
+    max-width: 360px;
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    animation: toastIn 0.2s ease;
+}
+
+.toast-message {
+    line-height: 1.45;
+    font-size: 0.9rem;
+}
+
+.toast-close {
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.toast-success { border-left: 4px solid var(--success); }
+.toast-warning { border-left: 4px solid var(--warning); }
+.toast-error { border-left: 4px solid var(--danger); }
+.toast-info { border-left: 4px solid var(--primary); }
+
+.toast-exit {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Pulse animation for active timer */
@@ -2125,6 +2270,9 @@ kbd {
 
 /* Mobile responsive for new features */
 @media (max-width: 768px) {
+    .welcome-banner,
+    .exam-planner-card { flex-direction: column; align-items: flex-start; }
+    .exam-date-field { width: 100%; min-width: 0; }
     .pomodoro-display { flex-direction: column; }
     .pomodoro-circle { width: 150px; height: 150px; }
     .pomodoro-time span { font-size: 1.8rem; }
@@ -2138,6 +2286,8 @@ kbd {
 @media (max-width: 480px) {
     .pomodoro-settings { flex-direction: column; align-items: center; }
     .scroll-top-btn { bottom: 1rem; right: 1rem; width: 38px; height: 38px; }
+    .toast-container { left: 1rem; right: 1rem; bottom: 1rem; }
+    .toast { min-width: 0; max-width: none; }
 }
 
 /* ===== GLOBAL SEARCH ===== */
@@ -2213,9 +2363,15 @@ kbd {
     align-items: center;
     gap: 0.8rem;
     padding: 0.7rem 0.8rem;
+    width: 100%;
+    border: none;
+    background: transparent;
     border-radius: 8px;
     cursor: pointer;
     transition: background 0.15s;
+    color: inherit;
+    text-align: left;
+    font: inherit;
 }
 .search-result-item:hover { background: var(--bg-secondary); }
 .sr-icon { font-size: 1.3rem; width: 28px; text-align: center; }
