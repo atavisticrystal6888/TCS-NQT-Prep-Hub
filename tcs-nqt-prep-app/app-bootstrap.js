@@ -29,11 +29,17 @@
             case 'start-quick-test':
                 startQuickTest(element.dataset.topic || 'mock');
                 break;
+            case 'apply-quiz-preset':
+                applyQuizPreset(element.dataset.preset || 'custom');
+                break;
             case 'start-quiz':
                 startQuiz();
                 break;
             case 'toggle-bookmark':
                 toggleBookmarkQuestion();
+                break;
+            case 'toggle-flag-question':
+                toggleFlagQuestion();
                 break;
             case 'prev-question':
                 prevQuestion();
@@ -44,8 +50,14 @@
             case 'submit-quiz':
                 submitQuiz();
                 break;
+            case 'set-confidence':
+                setConfidence(element.dataset.confidence || 'medium');
+                break;
             case 'review-quiz':
                 reviewQuiz();
+                break;
+            case 'review-explanations-first':
+                reviewExplanationsFirst();
                 break;
             case 'review-wrong-only':
                 reviewWrongOnly();
@@ -55,6 +67,15 @@
                 break;
             case 'start-weak-area-quiz':
                 startWeakAreaQuiz();
+                break;
+            case 'start-mistake-quiz':
+                startMistakeQuiz();
+                break;
+            case 'start-flagged-quiz':
+                startFlaggedQuiz();
+                break;
+            case 'resume-quiz-session':
+                resumeQuizSession();
                 break;
             case 'show-quiz-setup':
                 showQuizSetup();
@@ -199,6 +220,12 @@
             performSearch(event.target.value);
         });
 
+        document.querySelectorAll('#quizSetup input, #quizSetup select').forEach((input) => {
+            input.addEventListener('change', () => {
+                markQuizConfigCustom();
+            });
+        });
+
         document.getElementById('fcTopicSelect')?.addEventListener('change', loadFlashcards);
         document.getElementById('spacedRepToggle')?.addEventListener('change', toggleSpacedRepetition);
         document.getElementById('importFile')?.addEventListener('change', importProgress);
@@ -293,6 +320,11 @@
         updateStreakBadge();
         syncExamDateInputs();
         updateCountdown();
+        updateQuizPresetStatus(`Current setup: ${QUIZ_PRESETS.custom.label} — ${QUIZ_PRESETS.custom.note}`);
+        const quizSetup = document.getElementById('quizSetup');
+        if (quizSetup && !quizSetup.dataset.preset) {
+            quizSetup.dataset.preset = 'custom';
+        }
 
         const hoursInput = document.getElementById('hoursPerDay');
         if (hoursInput) {

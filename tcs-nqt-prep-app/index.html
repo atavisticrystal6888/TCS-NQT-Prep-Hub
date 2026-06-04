@@ -156,6 +156,24 @@
                 </label>
             </div>
 
+            <div class="dashboard-focus-grid">
+                <div class="card action-center-card">
+                    <p class="section-kicker">What to do next</p>
+                    <h3><i class="fas fa-bolt"></i> Recommended next steps</h3>
+                    <div id="recommendedActions" class="action-recommendations">
+                        <p class="empty-state">Take a quiz to unlock tailored recommendations.</p>
+                    </div>
+                </div>
+                <div class="card today-focus-card">
+                    <p class="section-kicker">Daily focus</p>
+                    <h3 id="todayFocusHeadline">Start with a focused block, then review what you miss.</h3>
+                    <ul id="todayFocusList" class="today-focus-list">
+                        <li>Set your exam date so the dashboard can pace the plan realistically.</li>
+                        <li>Use a preset drill or full mock to establish your current baseline.</li>
+                    </ul>
+                </div>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
@@ -214,6 +232,23 @@
                     <p class="empty-state">Take a few quizzes to see your weak areas.</p>
                 </div>
             </div>
+
+            <div class="dashboard-support-grid">
+                <div class="card review-bank-card">
+                    <p class="section-kicker">Smarter review</p>
+                    <h3><i class="fas fa-layer-group"></i> Mistake bank & flagged queue</h3>
+                    <div id="reviewBankSummary" class="review-bank-summary">
+                        <p class="empty-state">Your wrong answers, flagged questions, and low-confidence answers will appear here.</p>
+                    </div>
+                </div>
+                <div class="card freshness-card compact-freshness-card">
+                    <p class="section-kicker">Trust signals</p>
+                    <h3><i class="fas fa-shield-check"></i> Content freshness</h3>
+                    <div id="dashboardFreshness" class="freshness-stack">
+                        <p class="empty-state">Loading content review signals…</p>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Quiz / Test Page -->
@@ -221,6 +256,10 @@
             <!-- Quiz Setup -->
             <div id="quizSetup" class="quiz-setup">
                 <h2><i class="fas fa-pen-fancy"></i> Configure Your Test</h2>
+                <div class="quiz-setup-intro">
+                    <p class="quiz-setup-copy">Use timed presets for sectionals, adaptive recovery, or a prep-friendly full mock. Review mode and question mix stay visible throughout the session.</p>
+                    <div id="quizPresetStatus" class="quiz-preset-status">Current setup: Custom mix</div>
+                </div>
                 <div class="quiz-config-grid">
                     <div class="config-card">
                         <h4>Select Topics</h4>
@@ -255,6 +294,14 @@
                             </div>
                         </div>
                         <div class="setting-group">
+                            <label>Practice Mode</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="quizMode" value="standard" checked> Standard</label>
+                                <label><input type="radio" name="quizMode" value="adaptive"> Adaptive</label>
+                            </div>
+                            <small class="setting-hint">Adaptive mode prioritizes weak topics, repeat mistakes, and low-confidence questions.</small>
+                        </div>
+                        <div class="setting-group">
                             <label>Time Limit</label>
                             <div class="radio-group">
                                 <label><input type="radio" name="timeLimit" value="0"> No Limit</label>
@@ -267,15 +314,33 @@
                         <div class="setting-group">
                             <label><input type="checkbox" id="instantFeedback" checked> Show instant feedback</label>
                         </div>
+                        <div class="setting-group">
+                            <label for="examVariantSelect">Question Mix</label>
+                            <select id="examVariantSelect" class="config-select">
+                                <option value="all">Mixed / prep-friendly</option>
+                                <option value="cognitive">Cognitive focus</option>
+                                <option value="foundation">Programming foundation</option>
+                                <option value="it">IT-heavy mix</option>
+                                <option value="non-tech">Non-tech / aptitude mix</option>
+                            </select>
+                        </div>
+                        <div class="setting-group">
+                            <label>Review Style</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="quizReviewMode" value="standard" checked> Standard</label>
+                                <label><input type="radio" name="quizReviewMode" value="explanation-first"> Explanation first</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="quick-test-btns">
-                    <h4>Quick Start</h4>
-                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="quantitative">🔢 Quant Only</button>
-                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="logical">🧩 Reasoning Only</button>
-                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="verbal">📝 Verbal Only</button>
-                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="programming">💻 Programming Only</button>
-                    <button type="button" class="btn btn-outline" data-action="start-quick-test" data-topic="mock">📋 Full Mock Test (100Q)</button>
+                    <h4>Timed Presets</h4>
+                    <button type="button" class="btn btn-outline" data-action="apply-quiz-preset" data-preset="quant-sprint">🔢 Quant Sprint</button>
+                    <button type="button" class="btn btn-outline" data-action="apply-quiz-preset" data-preset="reasoning-sprint">🧩 Reasoning Sprint</button>
+                    <button type="button" class="btn btn-outline" data-action="apply-quiz-preset" data-preset="verbal-sprint">📝 Verbal Sprint</button>
+                    <button type="button" class="btn btn-outline" data-action="apply-quiz-preset" data-preset="it-foundations">💻 IT Foundations</button>
+                    <button type="button" class="btn btn-outline" data-action="apply-quiz-preset" data-preset="adaptive">🎯 Adaptive Recovery</button>
+                    <button type="button" class="btn btn-outline" data-action="apply-quiz-preset" data-preset="full-mock">📋 Full Mock Test</button>
                 </div>
                 <button type="button" class="btn btn-primary btn-lg" data-action="start-quiz" style="margin-top: 1.5rem;">
                     <i class="fas fa-rocket"></i> Start Test
@@ -291,6 +356,9 @@
                         <button type="button" class="bookmark-btn" id="bookmarkBtn" data-action="toggle-bookmark" title="Bookmark this question">
                             <i class="far fa-bookmark" id="bookmarkIcon"></i>
                         </button>
+                        <button type="button" class="bookmark-btn flag-btn" id="flagQuestionBtn" data-action="toggle-flag-question" title="Flag for review">
+                            <i class="far fa-flag" id="flagQuestionIcon"></i>
+                        </button>
                     </div>
                     <div class="quiz-timer" id="quizTimer">
                         <i class="fas fa-clock"></i> <span id="timerDisplay">30:00</span>
@@ -299,6 +367,14 @@
                 <div class="quiz-progress-bar">
                     <div class="quiz-progress-fill" id="quizProgressFill"></div>
                 </div>
+                <div class="quiz-session-strip">
+                    <div id="quizSessionMeta" class="quiz-session-meta"></div>
+                    <div class="question-confidence-block">
+                        <span class="confidence-label">Confidence</span>
+                        <div id="confidenceSelector" class="confidence-selector"></div>
+                    </div>
+                </div>
+                <div id="questionTrustMeta" class="question-trust-meta"></div>
                 <div class="question-card" id="questionCard">
                     <h3 id="questionText"></h3>
                     <div id="optionsList" class="options-list"></div>
@@ -341,9 +417,13 @@
                     </div>
                 </div>
                 <div class="results-topic-breakdown" id="topicBreakdown"></div>
+                <div id="resultsInsightSummary" class="results-insight-summary"></div>
                 <div class="results-actions">
                     <button type="button" class="btn btn-primary" data-action="review-quiz"><i class="fas fa-search"></i> Review Answers</button>
+                    <button type="button" class="btn btn-secondary" data-action="review-explanations-first"><i class="fas fa-lightbulb"></i> Explanation First</button>
                     <button type="button" class="btn btn-warning" data-action="review-wrong-only"><i class="fas fa-exclamation-triangle"></i> Wrong Only</button>
+                    <button type="button" class="btn btn-outline" data-action="start-mistake-quiz"><i class="fas fa-layer-group"></i> Retry Mistakes</button>
+                    <button type="button" class="btn btn-outline" data-action="start-flagged-quiz"><i class="fas fa-flag"></i> Retry Flagged</button>
                     <button type="button" class="btn btn-secondary" data-action="retake-quiz"><i class="fas fa-redo"></i> Retake Test</button>
                     <button type="button" class="btn btn-success" data-action="start-weak-area-quiz"><i class="fas fa-crosshairs"></i> Weak Area Quiz</button>
                     <button type="button" class="btn btn-outline" data-action="show-quiz-setup"><i class="fas fa-cog"></i> New Test</button>
@@ -518,6 +598,18 @@
         <!-- Resources & Tips Page -->
         <section id="page-resources" class="page">
             <h2><i class="fas fa-compass"></i> Resources & Exam Strategy</h2>
+            <div class="card glass-card resource-freshness-card">
+                <div class="freshness-card-header">
+                    <div>
+                        <p class="section-kicker">Content trust</p>
+                        <h3>Reviewed sources and version history</h3>
+                    </div>
+                    <div id="resourceContentVersion" class="version-pill">v--</div>
+                </div>
+                <div id="resourceFreshnessSections" class="freshness-section-list"></div>
+                <div id="resourceOfficialLinks" class="official-link-list"></div>
+                <div id="resourceChangelog" class="changelog-list"></div>
+            </div>
 
             <!-- Resource Tab Navigation -->
             <div class="resource-tabs">
@@ -531,8 +623,8 @@
             <!-- Tab: Exam Overview -->
             <div id="restab-overview" class="res-content active">
                 <div class="card exam-pattern-card glass-card">
-                    <h3>📋 TCS NQT Exam Pattern (2025-26)</h3>
-                    <p class="card-subtitle">The Foundation test is common for all. Advanced test is for Digital profiles only.</p>
+                    <h3>📋 Practice Mock Blueprint</h3>
+                    <p class="card-subtitle">This table reflects the prep-friendly full mock used in this app. Actual TCS iON NQT sections vary by the variant you choose on the official portal.</p>
                     <table class="exam-table">
                         <thead>
                             <tr><th>Section</th><th>Questions</th><th>Duration</th><th>Key Topics</th></tr>
@@ -556,30 +648,30 @@
                     </div>
                     <div class="card glass-card info-highlight">
                         <div class="info-icon blue"><i class="fas fa-laptop-code"></i></div>
-                        <h4>Online Proctored</h4>
-                        <p>Test is conducted remotely via webcam. Keep a clean desk & stable internet.</p>
+                        <h4>Authorised Exam Centres</h4>
+                        <p>Current TCS iON guidance says NQT is conducted at authorised exam centres. Check your admit card for the latest instructions.</p>
                     </div>
                     <div class="card glass-card info-highlight">
                         <div class="info-icon purple"><i class="fas fa-trophy"></i></div>
                         <h4>Score Valid 2 Years</h4>
-                        <p>Your NQT score remains valid for 2 years. Can reattempt after 6 months.</p>
+                        <p>Your NQT score remains valid for 2 years. Future tests are usually scheduled every 2-4 weeks if you want to improve it.</p>
                     </div>
                     <div class="card glass-card info-highlight">
                         <div class="info-icon orange"><i class="fas fa-money-bill-wave"></i></div>
-                        <h4>Package: 3.3 - 11+ LPA</h4>
-                        <p>Ninja: 3.36 LPA | Digital: 7-9 LPA | Prime: 9-11+ LPA</p>
+                        <h4>1.6L+ Jobs</h4>
+                        <p>The official portal highlights access to 1.6L+ IT and non-IT jobs. Salary depends on the recruiter, role, and current cycle.</p>
                     </div>
                 </div>
 
                 <div class="card glass-card">
                     <h3>🎓 Eligibility & Important Details</h3>
                     <div class="detail-grid">
-                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><strong>Qualification:</strong> B.E/B.Tech/M.E/M.Tech/MCA/M.Sc (CS/IT)</div>
-                        <div class="detail-item"><i class="fas fa-percent"></i><strong>Min Marks:</strong> 60% aggregate (no backlogs at joining)</div>
-                        <div class="detail-item"><i class="fas fa-calendar"></i><strong>Batch:</strong> 2025 & 2026 pass-outs</div>
-                        <div class="detail-item"><i class="fas fa-clock"></i><strong>Gap:</strong> Maximum 2 years gap in education</div>
-                        <div class="detail-item"><i class="fas fa-file-alt"></i><strong>Sections:</strong> Foundation (all roles) + Advanced (Digital roles)</div>
-                        <div class="detail-item"><i class="fas fa-redo"></i><strong>Reattempt:</strong> After 6 months from last attempt</div>
+                        <div class="detail-item"><i class="fas fa-graduation-cap"></i><strong>Eligibility:</strong> Pre-final/final-year students of any stream or degree</div>
+                        <div class="detail-item"><i class="fas fa-user-clock"></i><strong>Experience:</strong> Working professionals with up to 2 years of experience</div>
+                        <div class="detail-item"><i class="fas fa-calendar"></i><strong>Passing Window:</strong> 2021-2027 on the current official portal</div>
+                        <div class="detail-item"><i class="fas fa-clock"></i><strong>Test Cadence:</strong> Usually scheduled every 2-4 weeks</div>
+                        <div class="detail-item"><i class="fas fa-file-alt"></i><strong>Variants:</strong> Cognitive, IT, Non-Tech, and other role/domain tracks</div>
+                        <div class="detail-item"><i class="fas fa-language"></i><strong>Language:</strong> English only, with no negative marking</div>
                     </div>
                 </div>
             </div>
@@ -674,9 +766,9 @@
                 <div class="downloads-grid">
                     <div class="card glass-card download-card">
                         <div class="dl-icon"><i class="fas fa-file-pdf"></i></div>
-                        <h4>TCS NQT Syllabus 2026</h4>
-                        <p>Complete official syllabus with topic-wise weightage and marking scheme</p>
-                        <a href="https://learning.tcsionhub.in/hub/national-qualifier-test/" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+                        <h4>TCS iON NQT Official Hub</h4>
+                        <p>Live dates, variants, FAQs, score validity, and registration details</p>
+                        <a href="https://www.tcsion.com/hub/national-qualifier-test/" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
                             <i class="fas fa-external-link-alt"></i> Visit TCS iON
                         </a>
                     </div>
@@ -809,15 +901,15 @@
                         <p>Revenue (FY 2026)</p>
                     </div>
                     <div class="card glass-card tcs-stat-card">
-                        <h3>584,519</h3>
-                        <p>Employees (2026)</p>
+                        <h3>584K+</h3>
+                        <p>Employees Globally</p>
                     </div>
                     <div class="card glass-card tcs-stat-card">
-                        <h3>150+</h3>
-                        <p>Locations Worldwide</p>
+                        <h3>194</h3>
+                        <p>Service Delivery Centers</p>
                     </div>
                     <div class="card glass-card tcs-stat-card">
-                        <h3>46</h3>
+                        <h3>56</h3>
                         <p>Countries</p>
                     </div>
                 </div>
@@ -826,54 +918,53 @@
                     <div class="card glass-card">
                         <h3>🏢 Company Overview</h3>
                         <div class="tcs-facts">
-                            <div class="fact"><strong>Founded:</strong> 1968 by J.R.D. Tata</div>
+                            <div class="fact"><strong>Founded:</strong> 1968</div>
                             <div class="fact"><strong>HQ:</strong> Mumbai, Maharashtra, India</div>
-                            <div class="fact"><strong>CEO:</strong> K. Krithivasan (since June 2023)</div>
-                            <div class="fact"><strong>Chairman:</strong> Natarajan Chandrasekaran</div>
-                            <div class="fact"><strong>Parent:</strong> Tata Group (Tata Sons owns 71.74%)</div>
-                            <div class="fact"><strong>Employees:</strong> 584,519 (March 2026)</div>
-                            <div class="fact"><strong>Revenue:</strong> ₹2,71,423 Cr / US$29 billion (FY 2026)</div>
-                            <div class="fact"><strong>Net Income:</strong> ₹49,454 Cr / US$5.2 billion (FY 2026)</div>
-                            <div class="fact"><strong>Subsidiaries:</strong> 51 subsidiary companies in 55 countries</div>
-                            <div class="fact"><strong>Key Products:</strong> TCS BaNCS, Ignio (AI), MasterCraft, Quartz (Blockchain), HOBS, OmniStore</div>
+                            <div class="fact"><strong>CEO &amp; MD:</strong> K. Krithivasan</div>
+                            <div class="fact"><strong>Group:</strong> Part of the Tata Group</div>
+                            <div class="fact"><strong>Employees:</strong> 584K+ globally</div>
+                            <div class="fact"><strong>Revenue:</strong> US$30+ billion (FY 2026)</div>
+                            <div class="fact"><strong>Global Footprint:</strong> 56 countries, 194 service delivery centers</div>
+                            <div class="fact"><strong>Tagline:</strong> Building on Belief</div>
+                            <div class="fact"><strong>Key Platforms:</strong> TCS BaNCS, Ignio, MasterCraft, Quartz, TCS iON</div>
                         </div>
                     </div>
 
                     <div class="card glass-card">
-                        <h3>💰 Salary & Roles for Freshers</h3>
+                        <h3>💼 Official NQT Opportunities Snapshot</h3>
                         <div class="salary-grid">
                             <div class="salary-card ninja">
-                                <h4>Ninja</h4>
-                                <div class="salary-amount">₹3.36 LPA</div>
-                                <p>Foundation test qualifier</p>
-                                <ul><li>System Engineer role</li><li>Support & maintenance projects</li><li>Standard ILP training</li></ul>
+                                <h4>IT Roles</h4>
+                                <div class="salary-amount">20+ Roles</div>
+                                <p>Current official portal highlight</p>
+                                <ul><li>Software, full-stack, cloud, and related roles</li><li>Many listed IT jobs start around 3 LPA</li><li>Always verify the live job description</li></ul>
                             </div>
                             <div class="salary-card digital">
-                                <h4>Digital</h4>
-                                <div class="salary-amount">₹7-9 LPA</div>
-                                <p>Advanced test qualifier</p>
-                                <ul><li>Digital Engineer role</li><li>Development & cloud projects</li><li>Extended ILP + specialization</li></ul>
+                                <h4>Non-IT Roles</h4>
+                                <div class="salary-amount">150+ Roles</div>
+                                <p>Across business and operations functions</p>
+                                <ul><li>Analyst, HR, sales, support, and operations openings</li><li>Current portal spans 23+ industries</li><li>Eligibility varies by recruiter</li></ul>
                             </div>
                             <div class="salary-card prime">
-                                <h4>Prime</h4>
-                                <div class="salary-amount">₹9-11+ LPA</div>
-                                <p>Top scorers in Advanced</p>
-                                <ul><li>Digital Prime role</li><li>High-end tech projects</li><li>Premium ILP + mentorship</li></ul>
+                                <h4>Highest Listed</h4>
+                                <div class="salary-amount">19 LPA</div>
+                                <p>Portal highlight, not a guaranteed offer</p>
+                                <ul><li>Represents the top advertised outcome</li><li>Most openings will be lower than this</li><li>Read each JD carefully before applying</li></ul>
                             </div>
                         </div>
                     </div>
 
                     <div class="card glass-card">
-                        <h3>🎓 ILP — Initial Learning Program</h3>
+                        <h3>🎓 Fresher Onboarding &amp; Training</h3>
                         <div class="ilp-info">
-                            <p>After joining, all freshers undergo TCS's <strong>Initial Learning Program (ILP)</strong> — a comprehensive training program conducted at TCS facilities.</p>
+                            <p>TCS fresher training is structured, but the exact format, location, duration, and assessments can change by hiring track, business unit, and year. Treat the latest drive notice, recruiter mail, and offer letter as the source of truth.</p>
                             <div class="ilp-details">
-                                <div class="ilp-item"><i class="fas fa-map-marker-alt"></i><strong>Location:</strong> Trivandrum (Kerala) — main ILP center</div>
-                                <div class="ilp-item"><i class="fas fa-calendar-alt"></i><strong>Duration:</strong> 45-60 days (Ninja) | 60-90 days (Digital)</div>
-                                <div class="ilp-item"><i class="fas fa-laptop-code"></i><strong>Covers:</strong> Java/Python, DBMS, OS, Networking, Agile, Cloud basics</div>
-                                <div class="ilp-item"><i class="fas fa-exclamation-triangle"></i><strong>Assessment:</strong> Must clear ILP exams to get confirmed</div>
-                                <div class="ilp-item"><i class="fas fa-home"></i><strong>Accommodation:</strong> Provided by TCS during ILP</div>
-                                <div class="ilp-item"><i class="fas fa-users"></i><strong>Stream Allocation:</strong> Based on ILP performance and business needs</div>
+                                <div class="ilp-item"><i class="fas fa-map-marker-alt"></i><strong>Mode:</strong> Virtual, onsite, or hybrid depending on the current onboarding plan</div>
+                                <div class="ilp-item"><i class="fas fa-calendar-alt"></i><strong>Duration:</strong> Varies by program, business unit, and hiring cycle</div>
+                                <div class="ilp-item"><i class="fas fa-laptop-code"></i><strong>Focus Areas:</strong> Programming basics, tools, SDLC, domain onboarding, and workplace skills</div>
+                                <div class="ilp-item"><i class="fas fa-exclamation-triangle"></i><strong>Assessments:</strong> Internal evaluations may be part of onboarding</div>
+                                <div class="ilp-item"><i class="fas fa-home"></i><strong>Logistics:</strong> Follow the latest recruiter or onboarding communication</div>
+                                <div class="ilp-item"><i class="fas fa-users"></i><strong>Allocation:</strong> Project/stream depends on performance and business needs</div>
                             </div>
                         </div>
                     </div>
@@ -882,11 +973,11 @@
                         <h3>📋 TCS Hiring Process</h3>
                         <div class="hiring-timeline">
                             <div class="timeline-step"><div class="step-num">1</div><div class="step-content"><strong>Register on TCS NextStep</strong><br>Create profile on nextstep.tcs.com</div></div>
-                            <div class="timeline-step"><div class="step-num">2</div><div class="step-content"><strong>TCS NQT (Online Test)</strong><br>Foundation + Advanced sections</div></div>
+                            <div class="timeline-step"><div class="step-num">2</div><div class="step-content"><strong>TCS iON NQT / Drive Test</strong><br>Variant and sections depend on the role or hiring drive</div></div>
                             <div class="timeline-step"><div class="step-num">3</div><div class="step-content"><strong>Technical Interview</strong><br>CS fundamentals, coding, projects</div></div>
                             <div class="timeline-step"><div class="step-num">4</div><div class="step-content"><strong>Managerial Interview</strong><br>Situational, problem-solving</div></div>
                             <div class="timeline-step"><div class="step-num">5</div><div class="step-content"><strong>HR Interview</strong><br>Behavioral, salary, relocation</div></div>
-                            <div class="timeline-step"><div class="step-num">6</div><div class="step-content"><strong>Offer Letter</strong><br>Get your offer + join for ILP</div></div>
+                            <div class="timeline-step"><div class="step-num">6</div><div class="step-content"><strong>Offer &amp; Onboarding</strong><br>Training details are shared after selection</div></div>
                         </div>
                     </div>
 
@@ -940,6 +1031,10 @@
                 <div class="card">
                     <h3>📝 Test History</h3>
                     <div id="testHistory" class="test-history-table"></div>
+                </div>
+                <div class="card">
+                    <h3>🧠 Review Queue</h3>
+                    <div id="reviewQueueInsights" class="review-queue-insights"></div>
                 </div>
             </div>
             <div class="progress-actions">
@@ -1204,6 +1299,8 @@
 
     <script src="questions-data.js"></script>
     <script src="study-data.js"></script>
+    <script src="content-model.js"></script>
+    <script src="quiz-model.js"></script>
     <script src="app-core.js"></script>
     <script src="app.js"></script>
     <script src="app-bootstrap.js"></script>

@@ -9,11 +9,18 @@ let state = {
         questions: [],
         currentIndex: 0,
         answers: {},
+        flaggedIds: [],
+        confidence: {},
         startTime: null,
         timeLimit: 0,
+        timeRemaining: 0,
         timerInterval: null,
         submitted: false,
-        instantFeedback: true
+        instantFeedback: true,
+        mode: 'standard',
+        examVariant: 'all',
+        reviewMode: 'standard',
+        presetKey: 'custom'
     },
     flashcard: {
         cards: [],
@@ -22,6 +29,238 @@ let state = {
     },
     progress: loadProgress()
 };
+
+const QUESTION_LETTERS = ['A', 'B', 'C', 'D'];
+const CONFIDENCE_LEVELS = [
+    { value: 'low', label: 'Low', icon: '😕' },
+    { value: 'medium', label: 'Medium', icon: '🙂' },
+    { value: 'high', label: 'High', icon: '💪' }
+];
+const ALL_TOPICS = Object.keys(TOPIC_META);
+const QUIZ_PRESETS = {
+    custom: {
+        label: 'Custom mix',
+        note: 'Choose your own topic mix, timing, and review style.'
+    },
+    'quant-sprint': {
+        label: 'Quant sprint',
+        note: '25 quantitative questions in a 30 minute timed block.',
+        selectedTopics: ['quantitative'],
+        numQ: 25,
+        difficulty: 'medium',
+        mode: 'standard',
+        timeLimit: 30,
+        examVariant: 'cognitive',
+        reviewMode: 'standard',
+        instantFeedback: true
+    },
+    'reasoning-sprint': {
+        label: 'Reasoning sprint',
+        note: '30 reasoning questions with the same timing used in the mock blueprint.',
+        selectedTopics: ['logical'],
+        numQ: 25,
+        difficulty: 'medium',
+        mode: 'standard',
+        timeLimit: 50,
+        examVariant: 'cognitive',
+        reviewMode: 'standard',
+        instantFeedback: true
+    },
+    'verbal-sprint': {
+        label: 'Verbal sprint',
+        note: 'A timed verbal drill for grammar, vocabulary, and reading speed.',
+        selectedTopics: ['verbal'],
+        numQ: 24,
+        difficulty: 'medium',
+        mode: 'standard',
+        timeLimit: 30,
+        examVariant: 'cognitive',
+        reviewMode: 'standard',
+        instantFeedback: true
+    },
+    'programming-sprint': {
+        label: 'Programming sprint',
+        note: 'A short foundation drill for logic, tracing, and core programming concepts.',
+        selectedTopics: ['programming'],
+        numQ: 15,
+        difficulty: 'medium',
+        mode: 'standard',
+        timeLimit: 20,
+        examVariant: 'foundation',
+        reviewMode: 'standard',
+        instantFeedback: true
+    },
+    'it-foundations': {
+        label: 'IT foundations',
+        note: 'Programming, DBMS, OS, Networks, and DSA in one timed IT-heavy set.',
+        selectedTopics: ['programming', 'dbms', 'os', 'networking', 'dsa'],
+        numQ: 35,
+        difficulty: 'medium',
+        mode: 'standard',
+        timeLimit: 45,
+        examVariant: 'it',
+        reviewMode: 'explanation-first',
+        instantFeedback: true
+    },
+    adaptive: {
+        label: 'Adaptive recovery',
+        note: 'Bias the pool toward weak topics, recurring mistakes, and low-confidence answers.',
+        selectedTopics: ALL_TOPICS,
+        numQ: 30,
+        difficulty: 'medium',
+        mode: 'adaptive',
+        timeLimit: 45,
+        examVariant: 'all',
+        reviewMode: 'explanation-first',
+        instantFeedback: true
+    },
+    'full-mock': {
+        label: 'Prep-friendly full mock',
+        note: 'A 150-minute mixed mock based on the app’s blueprint, not an official one-to-one exam clone.',
+        selectedTopics: ['quantitative', 'logical', 'verbal', 'programming'],
+        numQ: 100,
+        difficulty: 'medium',
+        mode: 'standard',
+        timeLimit: 150,
+        examVariant: 'all',
+        reviewMode: 'standard',
+        instantFeedback: false
+    }
+};
+
+function getQuestionBank() {
+    return AppContent?.getQuestionBank ? AppContent.getQuestionBank() : QUESTION_BANK;
+}
+
+function getQuestionById(id) {
+    return AppContent?.getQuestionById ? AppContent.getQuestionById(id) : getQuestionBank().find((question) => question.id === Number(id));
+}
+
+function getQuestionsByFilters(filters = {}) {
+    if (AppContent?.getQuestions) return AppContent.getQuestions(filters);
+    let pool = getQuestionBank();
+    if (Array.isArray(filters.topics) && filters.topics.length > 0) {
+        pool = pool.filter((question) => filters.topics.includes(question.topic));
+    }
+    if (filters.difficulty === 'easy') pool = pool.filter((question) => question.difficulty === 'easy');
+    if (filters.difficulty === 'hard') pool = pool.filter((question) => question.difficulty !== 'easy');
+    return pool;
+}
+
+function getSelectedQuizTopics(containerId = 'topicCheckboxes') {
+    const selectedTopics = [];
+    document.querySelectorAll(`#${containerId} input:checked`).forEach((checkbox) => {
+        selectedTopics.push(checkbox.value);
+    });
+    return selectedTopics;
+}
+
+function setSelectedTopics(topics, containerId = 'topicCheckboxes') {
+    document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach((checkbox) => {
+        checkbox.checked = topics.includes(checkbox.value);
+    });
+}
+
+function getRadioValue(name, fallback) {
+    return document.querySelector(`input[name="${name}"]:checked`)?.value || fallback;
+}
+
+function setRadioValue(name, value) {
+    const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (input) input.checked = true;
+}
+
+function updateQuizPresetStatus(text) {
+    const status = document.getElementById('quizPresetStatus');
+    if (status) status.textContent = text;
+}
+
+function getActivePresetKey() {
+    return document.getElementById('quizSetup')?.dataset.preset || 'custom';
+}
+
+function getSelectedQuizConfig() {
+    return {
+        selectedTopics: getSelectedQuizTopics('topicCheckboxes'),
+        numQuestions: parseInt(getRadioValue('numQ', '25'), 10),
+        difficulty: getRadioValue('diff', 'medium'),
+        mode: getRadioValue('quizMode', 'standard'),
+        reviewMode: getRadioValue('quizReviewMode', 'standard'),
+        timeLimitMinutes: parseInt(getRadioValue('timeLimit', '30'), 10),
+        instantFeedback: document.getElementById('instantFeedback').checked,
+        examVariant: document.getElementById('examVariantSelect')?.value || 'all',
+        presetKey: getActivePresetKey()
+    };
+}
+
+function applyQuizPreset(presetKey) {
+    const preset = QUIZ_PRESETS[presetKey];
+    if (!preset) return;
+
+    navigateTo('quiz');
+    setSelectedTopics(preset.selectedTopics || ALL_TOPICS, 'topicCheckboxes');
+    setRadioValue('numQ', String(preset.numQ || 25));
+    setRadioValue('diff', preset.difficulty || 'medium');
+    setRadioValue('timeLimit', String(preset.timeLimit || 0));
+    setRadioValue('quizMode', preset.mode || 'standard');
+    setRadioValue('quizReviewMode', preset.reviewMode || 'standard');
+
+    const instantFeedback = document.getElementById('instantFeedback');
+    if (instantFeedback) instantFeedback.checked = preset.instantFeedback !== false;
+
+    const examVariantSelect = document.getElementById('examVariantSelect');
+    if (examVariantSelect) examVariantSelect.value = preset.examVariant || 'all';
+
+    document.getElementById('quizSetup').dataset.preset = presetKey;
+    updateQuizPresetStatus(`Current setup: ${preset.label} — ${preset.note}`);
+    showToast(`${preset.label} preset applied.`, 'success');
+}
+
+function markQuizConfigCustom() {
+    const setup = document.getElementById('quizSetup');
+    if (!setup) return;
+    if (setup.dataset.preset && setup.dataset.preset !== 'custom') {
+        setup.dataset.preset = 'custom';
+        updateQuizPresetStatus(`Current setup: ${QUIZ_PRESETS.custom.label} — ${QUIZ_PRESETS.custom.note}`);
+    }
+}
+
+function getCurrentQuestion() {
+    return state.quiz.questions[state.quiz.currentIndex] || null;
+}
+
+function formatExamVariantLabel(value) {
+    return {
+        all: 'Mixed',
+        cognitive: 'Cognitive',
+        foundation: 'Foundation',
+        it: 'IT-heavy',
+        'non-tech': 'Non-tech',
+        general: 'General'
+    }[value] || value;
+}
+
+function formatQuizModeLabel(value) {
+    return {
+        standard: 'Standard mode',
+        adaptive: 'Adaptive mode',
+        'mistake-review': 'Mistake review',
+        'flag-review': 'Flag review',
+        bookmarks: 'Bookmark review'
+    }[value] || value;
+}
+
+function persistActiveQuizSession() {
+    if (state.currentPage !== 'quiz' || state.quiz.submitted || state.quiz.questions.length === 0) return;
+    saveQuizSession(state.quiz, {
+        totalQuestions: state.quiz.questions.length,
+        answeredCount: Object.keys(state.quiz.answers).length,
+        flaggedCount: state.quiz.flaggedIds.length,
+        mode: state.quiz.mode,
+        examVariant: state.quiz.examVariant,
+        presetKey: state.quiz.presetKey
+    });
+}
 
 // ===== NAVIGATION =====
 function initNavigation() {
@@ -101,6 +340,10 @@ function updateDashboard() {
     renderTopicProgress();
     renderRecentActivity();
     renderWeakAreas();
+    renderRecommendedActions();
+    renderTodayFocus();
+    renderReviewBankSummary();
+    renderFreshnessPanels();
 }
 
 function renderTopicProgress() {
@@ -139,14 +382,16 @@ function renderRecentActivity() {
 
 function renderWeakAreas() {
     const container = document.getElementById('weakAreas');
-    const weak = [];
-    for (const [key, meta] of Object.entries(TOPIC_META)) {
+    const weak = (QuizModel?.getWeakTopicKeys
+        ? QuizModel.getWeakTopicKeys(state.progress, TOPIC_META, 70, false)
+        : []
+    ).map((key) => {
+        const meta = TOPIC_META[key];
         const stats = state.progress.topicStats[key] || { attempted: 0, correct: 0 };
-        if (stats.attempted > 0) {
-            const pct = Math.round((stats.correct / stats.attempted) * 100);
-            if (pct < 70) weak.push({ key, name: meta.name, icon: meta.icon, pct });
-        }
-    }
+        const pct = stats.attempted > 0 ? Math.round((stats.correct / stats.attempted) * 100) : 0;
+        return { key, name: meta.name, icon: meta.icon, pct };
+    });
+
     if (weak.length === 0 && state.progress.totalAttempted > 0) {
         container.innerHTML = '<p class="empty-state">Great job! No weak areas detected. Keep it up! 💪</p>';
     } else if (weak.length === 0) {
@@ -162,29 +407,192 @@ function renderWeakAreas() {
     }
 }
 
+function buildReviewBankHtml() {
+    const mistakeCount = state.progress.mistakeQuestionIds.length;
+    const flaggedCount = state.progress.flaggedQuestionIds.length;
+    const lowConfidenceCount = Object.values(state.progress.questionStats || {}).reduce((sum, stats) => sum + (stats.lowConfidence || 0), 0);
+    const resumeSnapshot = state.progress.lastSession?.snapshot;
+
+    if (!mistakeCount && !flaggedCount && !lowConfidenceCount && !resumeSnapshot?.questionIds?.length) {
+        return '<p class="empty-state">Finish a quiz and this queue will collect mistakes, flags, and uncertain answers for focused review.</p>';
+    }
+
+    const cards = [];
+    if (resumeSnapshot?.questionIds?.length) {
+        cards.push(`
+            <button type="button" class="review-bank-item" data-action="resume-quiz-session">
+                <span class="review-bank-icon">▶️</span>
+                <span>
+                    <strong>Resume last session</strong>
+                    <small>Continue from question ${Math.min((resumeSnapshot.currentIndex || 0) + 1, resumeSnapshot.questionIds.length)} of ${resumeSnapshot.questionIds.length}</small>
+                </span>
+            </button>
+        `);
+    }
+    if (mistakeCount) {
+        cards.push(`
+            <button type="button" class="review-bank-item" data-action="start-mistake-quiz">
+                <span class="review-bank-icon">🧠</span>
+                <span>
+                    <strong>${mistakeCount} in mistake bank</strong>
+                    <small>Retry the questions you have missed most often.</small>
+                </span>
+            </button>
+        `);
+    }
+    if (flaggedCount) {
+        cards.push(`
+            <button type="button" class="review-bank-item" data-action="start-flagged-quiz">
+                <span class="review-bank-icon">🚩</span>
+                <span>
+                    <strong>${flaggedCount} flagged questions</strong>
+                    <small>Return to questions you marked for a second look.</small>
+                </span>
+            </button>
+        `);
+    }
+    if (lowConfidenceCount) {
+        cards.push(`
+            <div class="review-bank-item static">
+                <span class="review-bank-icon">😕</span>
+                <span>
+                    <strong>${lowConfidenceCount} low-confidence answers tracked</strong>
+                    <small>Use explanation-first review to convert guesses into understanding.</small>
+                </span>
+            </div>
+        `);
+    }
+
+    return `<div class="review-bank-grid">${cards.join('')}</div>`;
+}
+
+function renderReviewBankSummary() {
+    const dashboardContainer = document.getElementById('reviewBankSummary');
+    if (dashboardContainer) dashboardContainer.innerHTML = buildReviewBankHtml();
+
+    const progressContainer = document.getElementById('reviewQueueInsights');
+    if (progressContainer) progressContainer.innerHTML = buildReviewBankHtml();
+}
+
+function renderRecommendedActions() {
+    const container = document.getElementById('recommendedActions');
+    if (!container) return;
+
+    const actions = QuizModel?.buildDashboardRecommendations
+        ? QuizModel.buildDashboardRecommendations(state.progress, TOPIC_META)
+        : [];
+
+    if (actions.length === 0) {
+        container.innerHTML = '<p class="empty-state">Take a quiz to unlock tailored recommendations.</p>';
+        return;
+    }
+
+    container.innerHTML = actions.map((action) => {
+        const attrs = [];
+        if (action.action) attrs.push(`data-action="${action.action}"`);
+        if (action.topic) attrs.push(`data-topic="${action.topic}"`);
+        if (action.preset) attrs.push(`data-preset="${action.preset}"`);
+        return `
+            <button type="button" class="recommended-action tone-${action.tone || 'neutral'}" ${attrs.join(' ')}>
+                <span class="recommended-action-title">${action.title}</span>
+                <span class="recommended-action-desc">${action.description}</span>
+            </button>
+        `;
+    }).join('');
+}
+
+function renderTodayFocus() {
+    const headline = document.getElementById('todayFocusHeadline');
+    const list = document.getElementById('todayFocusList');
+    if (!headline || !list) return;
+
+    const focus = QuizModel?.buildTodayFocus
+        ? QuizModel.buildTodayFocus(state.progress, TOPIC_META)
+        : {
+            headline: 'Start with one focused block, then review what you miss.',
+            items: ['Take a quiz to generate a tailored plan.']
+        };
+
+    headline.textContent = focus.headline;
+    list.innerHTML = focus.items.map((item) => `<li>${item}</li>`).join('');
+}
+
+function renderFreshnessPanels() {
+    const freshness = AppContent?.getFreshnessSummary ? AppContent.getFreshnessSummary() : null;
+    if (!freshness) return;
+
+    const dashboardContainer = document.getElementById('dashboardFreshness');
+    if (dashboardContainer) {
+        dashboardContainer.innerHTML = freshness.sections.slice(0, 3).map((section) => `
+            <div class="freshness-item">
+                <strong>${section.label}</strong>
+                <span>Reviewed ${section.reviewedAt} • ${section.confidence} confidence</span>
+                <small>${section.note}</small>
+            </div>
+        `).join('');
+    }
+
+    const versionBadge = document.getElementById('resourceContentVersion');
+    if (versionBadge) versionBadge.textContent = `v${freshness.version}`;
+
+    const sections = document.getElementById('resourceFreshnessSections');
+    if (sections) {
+        sections.innerHTML = freshness.sections.map((section) => `
+            <div class="freshness-section-card">
+                <div>
+                    <strong>${section.label}</strong>
+                    <p>${section.note}</p>
+                </div>
+                <span class="freshness-pill">${section.reviewedAt} • ${section.confidence}</span>
+            </div>
+        `).join('');
+    }
+
+    const officialLinks = document.getElementById('resourceOfficialLinks');
+    if (officialLinks) {
+        officialLinks.innerHTML = Object.entries(freshness.officialLinks).map(([key, href]) => `
+            <a class="official-link-chip" href="${href}" target="_blank" rel="noopener noreferrer">${key.replace(/([A-Z])/g, ' $1').replace(/^./, (m) => m.toUpperCase())}</a>
+        `).join('');
+    }
+
+    const changelog = document.getElementById('resourceChangelog');
+    if (changelog) {
+        changelog.innerHTML = freshness.changelog.map((item) => `
+            <div class="changelog-item">
+                <strong>${item.version}</strong>
+                <span>${item.date}</span>
+                <p>${item.summary}</p>
+            </div>
+        `).join('');
+    }
+}
+
 // ===== QUIZ ENGINE =====
 function startQuiz() {
-    const selectedTopics = [];
-    document.querySelectorAll('#topicCheckboxes input:checked').forEach(cb => {
-        selectedTopics.push(cb.value);
-    });
+    const config = getSelectedQuizConfig();
+    const { selectedTopics } = config;
 
     if (selectedTopics.length === 0) {
         showToast('Please select at least one topic.', 'warning');
         return;
     }
 
-    const numQ = parseInt(document.querySelector('input[name="numQ"]:checked').value);
-    const diff = document.querySelector('input[name="diff"]:checked').value;
-    const timeLimit = parseInt(document.querySelector('input[name="timeLimit"]:checked').value);
-    const instantFeedback = document.getElementById('instantFeedback').checked;
-
-    let pool = QUESTION_BANK.filter(q => selectedTopics.includes(q.topic));
-    if (diff === 'easy') pool = pool.filter(q => q.difficulty === 'easy');
-    else if (diff === 'hard') pool = pool.filter(q => q.difficulty === 'hard' || q.difficulty === 'medium');
-
-    // Shuffle and pick
-    pool = shuffleArray(pool).slice(0, Math.min(numQ, pool.length));
+    let pool = [];
+    if (config.mode === 'adaptive' && QuizModel?.buildAdaptiveQuestionPool) {
+        pool = QuizModel.buildAdaptiveQuestionPool(getQuestionBank(), state.progress, {
+            selectedTopics,
+            numQuestions: config.numQuestions,
+            difficulty: config.difficulty,
+            examVariant: config.examVariant
+        });
+    } else {
+        pool = getQuestionsByFilters({
+            topics: selectedTopics,
+            difficulty: config.difficulty,
+            examVariant: config.examVariant
+        });
+        pool = shuffleArray(pool).slice(0, Math.min(config.numQuestions, pool.length));
+    }
 
     if (pool.length === 0) {
         showToast('No questions match the selected filters.', 'warning');
@@ -192,9 +600,13 @@ function startQuiz() {
     }
 
     launchQuizPool(pool, {
-        timeLimitSeconds: timeLimit * 60,
-        instantFeedback,
-        shuffle: false
+        timeLimitSeconds: config.timeLimitMinutes * 60,
+        instantFeedback: config.instantFeedback,
+        shuffle: false,
+        mode: config.mode,
+        examVariant: config.examVariant,
+        reviewMode: config.reviewMode,
+        presetKey: config.presetKey
     });
 }
 
@@ -209,11 +621,18 @@ function launchQuizPool(pool, options = {}) {
         questions,
         currentIndex: 0,
         answers: {},
+        flaggedIds: [],
+        confidence: {},
         startTime: Date.now(),
         timeLimit: options.timeLimitSeconds || 0,
+        timeRemaining: options.timeLimitSeconds || 0,
         timerInterval: null,
         submitted: false,
-        instantFeedback: options.instantFeedback !== false
+        instantFeedback: options.instantFeedback !== false,
+        mode: options.mode || 'standard',
+        examVariant: options.examVariant || 'all',
+        reviewMode: options.reviewMode || 'standard',
+        presetKey: options.presetKey || 'custom'
     };
 
     navigateTo('quiz');
@@ -221,32 +640,48 @@ function launchQuizPool(pool, options = {}) {
     document.getElementById('quizActive').style.display = 'block';
     document.getElementById('quizResults').style.display = 'none';
     document.getElementById('reviewSection').style.display = 'none';
+    document.getElementById('reviewSection').innerHTML = '';
 
     document.getElementById('qTotal').textContent = questions.length;
     renderQuestion();
     renderNavigator();
 
+    const timer = document.getElementById('quizTimer');
+    if (timer) timer.className = 'quiz-timer';
+
     if (state.quiz.timeLimit > 0) startTimer();
+    else {
+        document.getElementById('timerDisplay').textContent = 'No limit';
+    }
+
+    persistActiveQuizSession();
     return true;
 }
 
 function startQuickTest(type) {
-    if (type === 'mock') {
-        // Select all topics, 100 questions, 150 minutes
-        document.querySelectorAll('#topicCheckboxes input').forEach(cb => cb.checked = true);
-        document.querySelector('input[name="numQ"][value="100"]').checked = true;
-        document.querySelector('input[name="timeLimit"][value="150"]').checked = true;
-    } else {
-        document.querySelectorAll('#topicCheckboxes input').forEach(cb => {
-            cb.checked = (cb.value === type);
-        });
-        document.querySelector('input[name="numQ"][value="25"]').checked = true;
+    const presetMap = {
+        mock: 'full-mock',
+        quantitative: 'quant-sprint',
+        logical: 'reasoning-sprint',
+        verbal: 'verbal-sprint',
+        programming: 'programming-sprint'
+    };
+
+    if (presetMap[type]) {
+        applyQuizPreset(presetMap[type]);
+        startQuiz();
+        return;
     }
+
+    applyQuizPreset('custom');
+    setSelectedTopics([type], 'topicCheckboxes');
     startQuiz();
 }
 
 function renderQuestion() {
-    const q = state.quiz.questions[state.quiz.currentIndex];
+    const q = getCurrentQuestion();
+    if (!q) return;
+
     const idx = state.quiz.currentIndex;
 
     document.getElementById('qCurrent').textContent = idx + 1;
@@ -256,7 +691,6 @@ function renderQuestion() {
         ((idx + 1) / state.quiz.questions.length * 100) + '%';
 
     const optionsHtml = q.options.map((opt, i) => {
-        const letters = ['A', 'B', 'C', 'D'];
         const selected = state.quiz.answers[q.id] === i;
         let cls = 'option-btn';
         if (selected) cls += ' selected';
@@ -275,7 +709,7 @@ function renderQuestion() {
         }
 
         return `<button type="button" class="${cls}" data-action="select-answer" data-question-id="${q.id}" data-option-index="${i}">
-            <span class="option-letter">${letters[i]}</span>
+            <span class="option-letter">${QUESTION_LETTERS[i]}</span>
             <span>${opt}</span>
         </button>`;
     }).join('');
@@ -301,12 +735,93 @@ function renderQuestion() {
     document.getElementById('nextBtn').style.display = isLast ? 'none' : 'inline-flex';
     document.getElementById('submitBtn').style.display = isLast && !state.quiz.submitted ? 'inline-flex' : 'none';
 
+    const trustMeta = document.getElementById('questionTrustMeta');
+    if (trustMeta) {
+        const variants = (q.meta?.examVariant || []).map(formatExamVariantLabel).join(', ');
+        trustMeta.innerHTML = `
+            <span class="question-trust-pill"><i class="fas fa-shield-check"></i> Reviewed ${q.meta?.reviewedAt || AppContent?.reviewedAt || 'recently'}</span>
+            <span class="question-trust-pill"><i class="fas fa-layer-group"></i> ${variants || 'Mixed practice'}</span>
+            <span class="question-trust-pill"><i class="fas fa-info-circle"></i> ${q.meta?.source || 'Curated practice set'}</span>
+        `;
+    }
+
+    renderQuizSessionMeta();
+    renderConfidenceSelector();
     updateNavigator();
+    updateFlagIcon();
+    updateBookmarkIcon();
+    persistActiveQuizSession();
+}
+
+function renderQuizSessionMeta() {
+    const container = document.getElementById('quizSessionMeta');
+    if (!container) return;
+
+    const answeredCount = Object.keys(state.quiz.answers).length;
+    container.innerHTML = `
+        <span class="quiz-session-pill">${formatQuizModeLabel(state.quiz.mode)}</span>
+        <span class="quiz-session-pill">${formatExamVariantLabel(state.quiz.examVariant)}</span>
+        <span class="quiz-session-pill">${answeredCount}/${state.quiz.questions.length} answered</span>
+        <span class="quiz-session-pill">${state.quiz.flaggedIds.length} flagged</span>
+    `;
+}
+
+function renderConfidenceSelector() {
+    const container = document.getElementById('confidenceSelector');
+    const question = getCurrentQuestion();
+    if (!container || !question) return;
+
+    const selected = state.quiz.confidence[question.id] || '';
+    container.innerHTML = CONFIDENCE_LEVELS.map((level) => `
+        <button
+            type="button"
+            class="confidence-btn ${selected === level.value ? 'active' : ''}"
+            data-action="set-confidence"
+            data-confidence="${level.value}"
+            aria-pressed="${selected === level.value ? 'true' : 'false'}"
+        >
+            <span>${level.icon}</span>
+            <span>${level.label}</span>
+        </button>
+    `).join('');
+}
+
+function setConfidence(level) {
+    const question = getCurrentQuestion();
+    if (!question || state.quiz.submitted) return;
+    state.quiz.confidence[question.id] = level;
+    renderConfidenceSelector();
+    persistActiveQuizSession();
+}
+
+function updateFlagIcon() {
+    const question = getCurrentQuestion();
+    const button = document.getElementById('flagQuestionBtn');
+    const icon = document.getElementById('flagQuestionIcon');
+    if (!question || !button || !icon) return;
+
+    const isFlagged = state.quiz.flaggedIds.includes(question.id);
+    icon.className = isFlagged ? 'fas fa-flag' : 'far fa-flag';
+    button.classList.toggle('flagged', isFlagged);
+    button.setAttribute('aria-pressed', isFlagged ? 'true' : 'false');
+}
+
+function toggleFlagQuestion() {
+    const question = getCurrentQuestion();
+    if (!question || state.quiz.submitted) return;
+
+    const index = state.quiz.flaggedIds.indexOf(question.id);
+    if (index >= 0) state.quiz.flaggedIds.splice(index, 1);
+    else state.quiz.flaggedIds.push(question.id);
+
+    updateFlagIcon();
+    updateNavigator();
+    renderQuizSessionMeta();
+    persistActiveQuizSession();
 }
 
 function selectAnswer(questionId, optionIndex) {
     if (state.quiz.submitted) return;
-    const q = state.quiz.questions.find(q => q.id === questionId);
     if (state.quiz.instantFeedback && state.quiz.answers[questionId] !== undefined) return;
 
     state.quiz.answers[questionId] = optionIndex;
@@ -343,11 +858,13 @@ function updateNavigator() {
     const dots = document.querySelectorAll('.q-nav-dot');
     dots.forEach((dot, i) => {
         dot.className = 'q-nav-dot';
+        const question = state.quiz.questions[i];
+        if (!question) return;
+        if (state.quiz.flaggedIds.includes(question.id)) dot.classList.add('flagged');
         if (i === state.quiz.currentIndex) dot.classList.add('current');
-        else if (state.quiz.answers[state.quiz.questions[i].id] !== undefined) {
+        else if (state.quiz.answers[question.id] !== undefined) {
             if (state.quiz.submitted) {
-                const q = state.quiz.questions[i];
-                dot.classList.add(state.quiz.answers[q.id] === q.answer ? 'correct-dot' : 'wrong-dot');
+                dot.classList.add(state.quiz.answers[question.id] === question.answer ? 'correct-dot' : 'wrong-dot');
             } else {
                 dot.classList.add('answered');
             }
@@ -357,16 +874,25 @@ function updateNavigator() {
 
 // ===== TIMER =====
 function startTimer() {
-    let remaining = state.quiz.timeLimit;
+    clearInterval(state.quiz.timerInterval);
+
+    let remaining = state.quiz.timeRemaining > 0 ? state.quiz.timeRemaining : state.quiz.timeLimit;
+    state.quiz.timeRemaining = remaining;
     updateTimerDisplay(remaining);
 
     state.quiz.timerInterval = setInterval(() => {
         remaining--;
+        state.quiz.timeRemaining = Math.max(remaining, 0);
         updateTimerDisplay(remaining);
 
         const timerEl = document.getElementById('quizTimer');
         if (remaining <= 60) timerEl.className = 'quiz-timer danger';
         else if (remaining <= 300) timerEl.className = 'quiz-timer warning';
+        else timerEl.className = 'quiz-timer';
+
+        if (remaining > 0 && remaining % 15 === 0) {
+            persistActiveQuizSession();
+        }
 
         if (remaining <= 0) {
             clearInterval(state.quiz.timerInterval);
@@ -394,59 +920,103 @@ function submitQuiz() {
     state.quiz.submitted = true;
     clearInterval(state.quiz.timerInterval);
 
-    const timeTaken = Math.floor((Date.now() - state.quiz.startTime) / 1000);
-    let correct = 0, wrong = 0, skipped = 0;
-    const topicResults = {};
+    const elapsed = Math.floor((Date.now() - state.quiz.startTime) / 1000);
+    const timeTaken = state.quiz.timeLimit > 0
+        ? Math.max(state.quiz.timeLimit - state.quiz.timeRemaining, 0)
+        : elapsed;
+    const summary = QuizModel?.summarizeQuiz
+        ? QuizModel.summarizeQuiz(state.quiz.questions, state.quiz.answers, {
+            confidence: state.quiz.confidence,
+            flaggedIds: state.quiz.flaggedIds
+        })
+        : null;
 
-    state.quiz.questions.forEach(q => {
-        const answer = state.quiz.answers[q.id];
-        if (!topicResults[q.topic]) topicResults[q.topic] = { correct: 0, wrong: 0, total: 0 };
-        topicResults[q.topic].total++;
+    if (!summary) return;
 
-        if (answer === undefined) {
-            skipped++;
-        } else if (answer === q.answer) {
-            correct++;
-            topicResults[q.topic].correct++;
-        } else {
-            wrong++;
-            topicResults[q.topic].wrong++;
-        }
-    });
-
-    const total = state.quiz.questions.length;
-    const percent = Math.round((correct / total) * 100);
+    const { correct, wrong, skipped, total, percent, topicResults } = summary;
 
     // Update progress
-    state.progress.totalAttempted += (correct + wrong);
+    state.progress.totalAttempted += summary.answeredCount;
     state.progress.totalCorrect += correct;
     state.progress.totalTime += timeTaken;
     state.progress.testsCompleted++;
 
-    for (const [topic, results] of Object.entries(topicResults)) {
-        if (!state.progress.topicStats[topic]) {
-            state.progress.topicStats[topic] = { attempted: 0, correct: 0 };
+    const mistakeSet = new Set(state.progress.mistakeQuestionIds || []);
+    const flaggedSet = new Set(state.progress.flaggedQuestionIds || []);
+
+    state.quiz.questions.forEach((question) => {
+        const answer = state.quiz.answers[question.id];
+        const confidence = state.quiz.confidence[question.id] || 'unrated';
+        const currentStats = state.progress.questionStats[String(question.id)] || {};
+        const isCorrect = answer !== undefined && answer === question.answer;
+        const isSkipped = answer === undefined;
+        const isFlagged = state.quiz.flaggedIds.includes(question.id);
+
+        if (!state.progress.topicStats[question.topic]) {
+            state.progress.topicStats[question.topic] = { attempted: 0, correct: 0 };
         }
-        state.progress.topicStats[topic].attempted += (results.correct + results.wrong);
-        state.progress.topicStats[topic].correct += results.correct;
-    }
+        if (!isSkipped) {
+            state.progress.topicStats[question.topic].attempted += 1;
+            if (isCorrect) state.progress.topicStats[question.topic].correct += 1;
+        }
+
+        updateQuestionProgress(question.id, {
+            seen: (currentStats.seen || 0) + 1,
+            correct: (currentStats.correct || 0) + (isCorrect ? 1 : 0),
+            wrong: (currentStats.wrong || 0) + (!isCorrect && !isSkipped ? 1 : 0),
+            skipped: (currentStats.skipped || 0) + (isSkipped ? 1 : 0),
+            flagged: (currentStats.flagged || 0) + (isFlagged ? 1 : 0),
+            lowConfidence: (currentStats.lowConfidence || 0) + (confidence === 'low' ? 1 : 0),
+            mediumConfidence: (currentStats.mediumConfidence || 0) + (confidence === 'medium' ? 1 : 0),
+            highConfidence: (currentStats.highConfidence || 0) + (confidence === 'high' ? 1 : 0),
+            lastConfidence: confidence,
+            lastResult: isSkipped ? 'skipped' : isCorrect ? 'correct' : 'wrong',
+            lastAttemptedAt: new Date().toISOString()
+        });
+
+        if (!isCorrect || confidence === 'low') mistakeSet.add(question.id);
+        else if (confidence === 'high') mistakeSet.delete(question.id);
+
+        if (isFlagged) flaggedSet.add(question.id);
+        else if (isCorrect && confidence === 'high') flaggedSet.delete(question.id);
+    });
+
+    setQuestionList('mistakeQuestionIds', Array.from(mistakeSet));
+    setQuestionList('flaggedQuestionIds', Array.from(flaggedSet));
 
     state.progress.testHistory.push({
         date: new Date().toLocaleDateString(),
+        dateKey: getDateKey(new Date()),
         score: percent,
-        correct, wrong, skipped,
+        correct,
+        wrong,
+        skipped,
         total,
         durationSeconds: timeTaken,
         time: formatTime(timeTaken),
         topics: Object.keys(topicResults).map(t => TOPIC_META[t]?.icon || '').join(' '),
-        topicBreakdown: topicResults
+        topicBreakdown: topicResults,
+        wrongQuestionIds: summary.wrongQuestionIds,
+        skippedQuestionIds: summary.skippedQuestionIds,
+        lowConfidenceQuestionIds: summary.lowConfidenceQuestionIds,
+        flaggedQuestionIds: [...state.quiz.flaggedIds],
+        mode: state.quiz.mode,
+        examVariant: state.quiz.examVariant,
+        reviewMode: state.quiz.reviewMode,
+        presetKey: state.quiz.presetKey
     });
 
-    recordStudyAction(percent >= 70 ? '🎉' : '📝', `Scored ${percent}% (${correct}/${total}) in quiz`);
-    showResults(percent, correct, wrong, skipped, timeTaken, topicResults);
+    clearLastSession('quiz');
+    recordStudyAction(percent >= 70 ? '🎉' : '📝', `Scored ${percent}% (${correct}/${total}) in ${formatQuizModeLabel(state.quiz.mode).toLowerCase()}`);
+    showResults(summary, timeTaken);
 }
 
-function showResults(percent, correct, wrong, skipped, timeTaken, topicResults) {
+function showResults(summary, timeTaken) {
+    const { percent, correct, wrong, skipped, topicResults, lowConfidenceQuestionIds, flaggedQuestionIds, wrongQuestionIds, examVariant } = {
+        ...summary,
+        examVariant: state.quiz.examVariant
+    };
+
     document.getElementById('quizActive').style.display = 'none';
     document.getElementById('quizResults').style.display = 'block';
 
@@ -481,34 +1051,90 @@ function showResults(percent, correct, wrong, skipped, timeTaken, topicResults) 
     }
     breakdownHtml += '</div>';
     document.getElementById('topicBreakdown').innerHTML = breakdownHtml;
+
+    const insights = document.getElementById('resultsInsightSummary');
+    if (insights) {
+        insights.innerHTML = `
+            <div class="results-insight-grid">
+                <div class="results-insight-card">
+                    <strong>${wrongQuestionIds.length}</strong>
+                    <span>Added to mistake bank</span>
+                </div>
+                <div class="results-insight-card">
+                    <strong>${flaggedQuestionIds.length}</strong>
+                    <span>Flagged for a second look</span>
+                </div>
+                <div class="results-insight-card">
+                    <strong>${lowConfidenceQuestionIds.length}</strong>
+                    <span>Low-confidence answers tracked</span>
+                </div>
+                <div class="results-insight-card wide">
+                    <strong>${formatQuizModeLabel(state.quiz.mode)}</strong>
+                    <span>${formatExamVariantLabel(examVariant)} • ${state.quiz.reviewMode === 'explanation-first' ? 'Explanation-first review' : 'Standard review'} ready</span>
+                </div>
+            </div>
+        `;
+    }
 }
 
 function reviewQuiz() {
+    renderReviewSection('all', state.quiz.reviewMode || 'standard');
+}
+
+function reviewExplanationsFirst() {
+    renderReviewSection('all', 'explanation-first');
+}
+
+function renderReviewSection(filter = 'all', mode = 'standard') {
     const section = document.getElementById('reviewSection');
     section.style.display = 'block';
 
-    let html = '<h3>📝 Answer Review</h3>';
-    state.quiz.questions.forEach((q, i) => {
+    const questions = state.quiz.questions.filter((question) => {
+        const answer = state.quiz.answers[question.id];
+        if (filter === 'wrong') return answer !== undefined && answer !== question.answer;
+        if (filter === 'flagged') return state.quiz.flaggedIds.includes(question.id);
+        return true;
+    });
+
+    if (questions.length === 0) {
+        section.innerHTML = '<div class="card"><h3>Nothing to review yet</h3><p>No questions matched this review filter.</p></div>';
+        section.scrollIntoView({ behavior: 'smooth' });
+        return;
+    }
+
+    const heading = filter === 'wrong'
+        ? `❌ Wrong Answers (${questions.length})`
+        : filter === 'flagged'
+            ? `🚩 Flagged Questions (${questions.length})`
+            : mode === 'explanation-first'
+                ? `💡 Explanation-First Review (${questions.length})`
+                : `📝 Answer Review (${questions.length})`;
+
+    let html = `<h3>${heading}</h3>`;
+    questions.forEach((q, i) => {
         const answer = state.quiz.answers[q.id];
         const isCorrect = answer === q.answer;
         const isSkipped = answer === undefined;
         const cls = isSkipped ? 'skipped' : (isCorrect ? 'correct' : 'wrong');
-        const letters = ['A', 'B', 'C', 'D'];
+        const confidence = state.quiz.confidence[q.id] || 'unrated';
+        const isFlagged = state.quiz.flaggedIds.includes(q.id);
+
+        const choicesHtml = q.options.map((opt, j) => {
+            let style = '';
+            let marker = '';
+            if (j === q.answer) { style = 'color: #065f46; font-weight: 700;'; marker = ' ✅'; }
+            if (j === answer && j !== q.answer) { style = 'color: #991b1b; text-decoration: line-through;'; marker = ' ❌'; }
+            return `<div style="${style}">${QUESTION_LETTERS[j]}. ${opt}${marker}</div>`;
+        }).join('');
+
+        const explanationHtml = `<div class="review-explanation ${mode === 'explanation-first' ? 'prominent' : ''}">💡 ${q.explanation}</div>`;
+        const answerHtml = `<div style="margin: 0.5rem 0;">${choicesHtml}</div>`;
 
         html += `
             <div class="review-item ${cls}">
-                <div class="review-meta">${TOPIC_META[q.topic]?.icon} ${TOPIC_META[q.topic]?.name} • Q${i + 1}</div>
+                <div class="review-meta">${TOPIC_META[q.topic]?.icon} ${TOPIC_META[q.topic]?.name} • Q${i + 1} • Confidence: ${confidence}${isFlagged ? ' • Flagged' : ''} • Reviewed ${q.meta?.reviewedAt || AppContent?.reviewedAt || 'recently'}</div>
                 <h4>${q.question}</h4>
-                <div style="margin: 0.5rem 0;">
-                    ${q.options.map((opt, j) => {
-                        let style = '';
-                        let marker = '';
-                        if (j === q.answer) { style = 'color: #065f46; font-weight: 700;'; marker = ' ✅'; }
-                        if (j === answer && j !== q.answer) { style = 'color: #991b1b; text-decoration: line-through;'; marker = ' ❌'; }
-                        return `<div style="${style}">${letters[j]}. ${opt}${marker}</div>`;
-                    }).join('')}
-                </div>
-                <div class="review-explanation">💡 ${q.explanation}</div>
+                ${mode === 'explanation-first' ? explanationHtml + answerHtml : answerHtml + explanationHtml}
             </div>`;
     });
 
@@ -519,16 +1145,21 @@ function reviewQuiz() {
 function retakeQuiz() {
     state.quiz.currentIndex = 0;
     state.quiz.answers = {};
+    state.quiz.flaggedIds = [];
+    state.quiz.confidence = {};
     state.quiz.startTime = Date.now();
+    state.quiz.timeRemaining = state.quiz.timeLimit;
     state.quiz.submitted = false;
 
     document.getElementById('quizResults').style.display = 'none';
     document.getElementById('quizActive').style.display = 'block';
     document.getElementById('reviewSection').style.display = 'none';
+    document.getElementById('reviewSection').innerHTML = '';
 
     renderQuestion();
     renderNavigator();
     if (state.quiz.timeLimit > 0) startTimer();
+    persistActiveQuizSession();
 }
 
 function showQuizSetup() {
@@ -552,12 +1183,23 @@ function initStudyTabs() {
 }
 
 function openStudyTopic(topicKey) {
-    const topic = STUDY_MATERIALS[topicKey];
+    const topic = AppContent?.getStudyTopic ? AppContent.getStudyTopic(topicKey) : STUDY_MATERIALS[topicKey];
     if (!topic) return;
 
     document.getElementById('studyModalTitle').textContent = topic.title;
 
     let html = '';
+    if (topic.meta) {
+        html += `
+            <div class="content-meta-banner">
+                <span class="trust-chip">Reviewed ${topic.meta.reviewedAt}</span>
+                <span class="trust-chip">${topic.meta.confidence} confidence</span>
+                <span class="trust-chip">Variants: ${(topic.meta.examVariant || []).map(formatExamVariantLabel).join(', ') || 'General'}</span>
+                ${(topic.meta.sources || []).map((source) => `<a class="official-link-chip" href="${source.href}" target="_blank" rel="noopener noreferrer">${source.label}</a>`).join('')}
+            </div>
+        `;
+    }
+
     topic.sections.forEach(section => {
         html += `
             <div style="margin-bottom: 1.5rem;">
@@ -713,11 +1355,19 @@ function initInterviewTabs() {
 }
 
 function renderInterviewContent(round) {
-    const data = INTERVIEW_DATA[round];
+    const roundData = AppContent?.getInterviewRound ? AppContent.getInterviewRound(round) : { items: INTERVIEW_DATA[round], meta: null };
+    const data = roundData?.items;
     if (!data) return;
 
     const container = document.getElementById('interviewContent');
-    container.innerHTML = data.map((item, i) => `
+    const metaHtml = roundData.meta ? `
+        <div class="content-meta-banner">
+            <span class="trust-chip">Reviewed ${roundData.meta.reviewedAt}</span>
+            <span class="trust-chip">${roundData.meta.confidence} confidence</span>
+            ${(roundData.meta.sources || []).map((source) => `<a class="official-link-chip" href="${source.href}" target="_blank" rel="noopener noreferrer">${source.label}</a>`).join('')}
+        </div>
+    ` : '';
+    container.innerHTML = metaHtml + data.map((item, i) => `
         <div class="interview-item">
             <button type="button" class="interview-question" data-action="toggle-interview-answer" aria-expanded="false">
                 <span>Q${i + 1}. ${item.q}</span>
@@ -740,9 +1390,11 @@ function toggleIntAnswer(el) {
 // ===== FLASHCARDS =====
 function loadFlashcards() {
     const topic = document.getElementById('fcTopicSelect').value;
-    state.flashcard.cards = topic === 'all'
-        ? [...FLASHCARD_DATA]
-        : FLASHCARD_DATA.filter(fc => fc.topic === topic);
+    state.flashcard.cards = AppContent?.getFlashcards
+        ? [...AppContent.getFlashcards(topic)]
+        : topic === 'all'
+            ? [...FLASHCARD_DATA]
+            : FLASHCARD_DATA.filter(fc => fc.topic === topic);
 
     state.flashcard.cards = shuffleArray(state.flashcard.cards);
     state.flashcard.currentIndex = 0;
@@ -858,7 +1510,7 @@ function renderVideoGrid() {
 
 function renderLinksGrid() {
     const links = [
-        { name: "TCS iON NQT Portal", desc: "Official registration and test portal", url: "https://learning.tcsionhub.in/hub/national-qualifier-test/", icon: "fas fa-globe", color: "#1a73e8" },
+        { name: "TCS iON NQT Portal", desc: "Official registration and test portal", url: "https://www.tcsion.com/hub/national-qualifier-test/", icon: "fas fa-globe", color: "#1a73e8" },
         { name: "TCS NextStep Portal", desc: "Application portal for TCS fresher hiring", url: "https://nextstep.tcs.com/campus/", icon: "fas fa-user-plus", color: "#0f9d58" },
         { name: "GeeksforGeeks — TCS NQT", desc: "TCS NQT preparation articles and quizzes", url: "https://www.geeksforgeeks.org/tcs-placement-paper-aptitude-questions/", icon: "fas fa-code", color: "#00aa00" },
         { name: "PrepInsta — TCS NQT", desc: "Previous papers, mock tests, and tips", url: "https://prepinsta.com/tcs-nqt/", icon: "fas fa-brain", color: "#ff4444" },
@@ -1138,6 +1790,8 @@ function renderProgressPage() {
             `).join('');
         }
     }
+
+    renderReviewBankSummary();
 }
 
 function confirmResetProgress() {
@@ -1499,14 +2153,15 @@ function renderBookmarksList(filterTopic) {
     if (!container) return;
 
     const filter = filterTopic || 'all';
-    let bookmarkedQs = QUESTION_BANK.filter(q => state.progress.bookmarks.includes(q.id));
+    const questionBank = getQuestionBank();
+    let bookmarkedQs = questionBank.filter(q => state.progress.bookmarks.includes(q.id));
     if (filter !== 'all') bookmarkedQs = bookmarkedQs.filter(q => q.topic === filter);
 
     // Stats
     if (statsEl) {
         const total = state.progress.bookmarks.length;
         const byTopic = {};
-        QUESTION_BANK.filter(q => state.progress.bookmarks.includes(q.id)).forEach(q => {
+        questionBank.filter(q => state.progress.bookmarks.includes(q.id)).forEach(q => {
             byTopic[q.topic] = (byTopic[q.topic] || 0) + 1;
         });
         if (total > 0) {
@@ -1529,7 +2184,6 @@ function renderBookmarksList(filterTopic) {
 
     if (actionsEl) actionsEl.style.display = 'flex';
 
-    const letters = ['A', 'B', 'C', 'D'];
     container.innerHTML = bookmarkedQs.map(q => `
         <div class="bookmark-item">
             <div class="bm-item-header">
@@ -1542,10 +2196,14 @@ function renderBookmarksList(filterTopic) {
             <h4 class="bm-question">${q.question}</h4>
             <div class="bm-options">
                 ${q.options.map((opt, i) => `
-                    <span class="${i === q.answer ? 'bm-correct-opt' : ''}">${letters[i]}. ${opt}</span>
+                    <span class="${i === q.answer ? 'bm-correct-opt' : ''}">${QUESTION_LETTERS[i]}. ${opt}</span>
                 `).join('')}
             </div>
             <div class="bm-explanation">💡 ${q.explanation}</div>
+            <div class="bookmark-meta">
+                <span class="trust-chip">${q.meta?.source || 'Curated practice set'}</span>
+                <span class="trust-chip">Reviewed ${q.meta?.reviewedAt || AppContent?.reviewedAt || 'recently'}</span>
+            </div>
         </div>
     `).join('');
 }
@@ -1575,10 +2233,14 @@ function startBookmarkQuiz() {
         return;
     }
 
-    const pool = QUESTION_BANK.filter(q => state.progress.bookmarks.includes(q.id));
+    const pool = getQuestionBank().filter(q => state.progress.bookmarks.includes(q.id));
     launchQuizPool(pool, {
         timeLimitSeconds: 0,
-        instantFeedback: true
+        instantFeedback: true,
+        mode: 'bookmarks',
+        examVariant: 'all',
+        reviewMode: 'explanation-first',
+        presetKey: 'custom'
     });
 }
 
@@ -1631,16 +2293,18 @@ function performSearch(query) {
 
     const q = query.toLowerCase();
     const matches = [];
+    const questionBank = getQuestionBank();
+    const flashcards = AppContent?.getFlashcards ? AppContent.getFlashcards('all') : FLASHCARD_DATA;
 
     // Search questions
-    QUESTION_BANK.forEach(item => {
+    questionBank.forEach(item => {
         if (item.question.toLowerCase().includes(q) || item.options.some(o => o.toLowerCase().includes(q))) {
             matches.push({ type: 'question', icon: '❓', text: item.question, topic: TOPIC_META[item.topic]?.name || item.topic, id: item.id });
         }
     });
 
     // Search flashcards
-    FLASHCARD_DATA.forEach((fc, i) => {
+    flashcards.forEach((fc, i) => {
         if (fc.front.toLowerCase().includes(q) || fc.back.toLowerCase().includes(q)) {
             matches.push({ type: 'flashcard', icon: '🃏', text: fc.front, topic: fc.topic, idx: i, value: encodeURIComponent(fc.front) });
         }
@@ -1696,6 +2360,9 @@ function openSearchResult(type, payload) {
 
     if (type === 'flashcard') {
         navigateTo('flashcards');
+        const topicSelect = document.getElementById('fcTopicSelect');
+        if (topicSelect) topicSelect.value = 'all';
+        loadFlashcards();
         const frontText = payload.value ? decodeURIComponent(payload.value) : '';
         const targetIndex = state.flashcard.cards.findIndex((card) => card.front === frontText);
         if (targetIndex >= 0) {
@@ -1707,18 +2374,22 @@ function openSearchResult(type, payload) {
     }
 
     if (type === 'question') {
-        const question = QUESTION_BANK.find(item => item.id === payload.id);
+        const question = getQuestionById(payload.id);
         if (!question) return;
 
-        document.querySelectorAll('#topicCheckboxes input').forEach(cb => {
-            cb.checked = cb.value === question.topic;
-        });
-        document.querySelector('input[name="numQ"][value="25"]').checked = true;
+        setSelectedTopics([question.topic], 'topicCheckboxes');
+        setRadioValue('numQ', '25');
+        document.getElementById('quizSetup').dataset.preset = 'custom';
+        updateQuizPresetStatus(`Current setup: ${QUIZ_PRESETS.custom.label} — ${QUIZ_PRESETS.custom.note}`);
         navigateTo('quiz');
         launchQuizPool([question], {
             timeLimitSeconds: 0,
             instantFeedback: true,
-            shuffle: false
+            shuffle: false,
+            mode: 'standard',
+            examVariant: 'all',
+            reviewMode: 'standard',
+            presetKey: 'custom'
         });
     }
 }
@@ -1767,7 +2438,7 @@ function updateFcStats() {
     const el = document.getElementById('fcStats');
     if (!el) return;
     const progress = state.progress.flashcardProgress || {};
-    const total = FLASHCARD_DATA.length;
+    const total = AppContent?.getFlashcards ? AppContent.getFlashcards('all').length : FLASHCARD_DATA.length;
     const hard = Object.values(progress).filter(v => v === 'hard').length;
     const medium = Object.values(progress).filter(v => v === 'medium').length;
     const easy = Object.values(progress).filter(v => v === 'easy').length;
@@ -1779,7 +2450,11 @@ function updateFcStats() {
 const _origLoadFlashcards = loadFlashcards;
 loadFlashcards = function() {
     const topic = document.getElementById('fcTopicSelect').value;
-    let cards = topic === 'all' ? [...FLASHCARD_DATA] : FLASHCARD_DATA.filter(fc => fc.topic === topic);
+    let cards = AppContent?.getFlashcards
+        ? [...AppContent.getFlashcards(topic)]
+        : topic === 'all'
+            ? [...FLASHCARD_DATA]
+            : FLASHCARD_DATA.filter(fc => fc.topic === topic);
 
     // Add custom flashcards
     const customCards = JSON.parse(localStorage.getItem('tcsNqtCustomFlashcards') || '[]');
@@ -1899,73 +2574,119 @@ function importProgress(event) {
 
 // ===== WEAK AREA AUTO-QUIZ =====
 function startWeakAreaQuiz() {
-    const weakTopics = [];
-    for (const [key, meta] of Object.entries(TOPIC_META)) {
-        const stats = state.progress.topicStats[key] || { attempted: 0, correct: 0 };
-        if (stats.attempted > 0) {
-            const pct = Math.round((stats.correct / stats.attempted) * 100);
-            if (pct < 70) weakTopics.push(key);
-        } else {
-            weakTopics.push(key); // Untested topics are also weak
-        }
-    }
+    const weakTopics = QuizModel?.getWeakTopicKeys
+        ? QuizModel.getWeakTopicKeys(state.progress, TOPIC_META, 70, true)
+        : Object.keys(TOPIC_META);
 
     if (weakTopics.length === 0) {
         showToast('No weak areas found. Try a full mock test instead.', 'success');
         return;
     }
 
-    let pool = QUESTION_BANK.filter(q => weakTopics.includes(q.topic));
-    pool = shuffleArray(pool).slice(0, 25);
+    let pool = QuizModel?.buildAdaptiveQuestionPool
+        ? QuizModel.buildAdaptiveQuestionPool(getQuestionBank(), state.progress, {
+            selectedTopics: weakTopics,
+            numQuestions: 25,
+            difficulty: 'mixed',
+            examVariant: 'all'
+        })
+        : shuffleArray(getQuestionBank().filter(q => weakTopics.includes(q.topic))).slice(0, 25);
 
     if (pool.length === 0) { showToast('No questions available for weak-area practice.', 'warning'); return; }
 
     launchQuizPool(pool, {
         timeLimitSeconds: 0,
-        instantFeedback: true
+        instantFeedback: true,
+        mode: 'adaptive',
+        examVariant: 'all',
+        reviewMode: 'explanation-first',
+        presetKey: 'adaptive'
     });
+}
+
+function startMistakeQuiz() {
+    const pool = QuizModel?.buildRetryPool
+        ? QuizModel.buildRetryPool(getQuestionBank(), state.progress.mistakeQuestionIds, 25)
+        : [];
+
+    if (!pool.length) {
+        showToast('No mistake-bank questions available yet.', 'warning');
+        return;
+    }
+
+    launchQuizPool(pool, {
+        timeLimitSeconds: 0,
+        instantFeedback: true,
+        mode: 'mistake-review',
+        examVariant: 'all',
+        reviewMode: 'explanation-first',
+        presetKey: 'custom'
+    });
+}
+
+function startFlaggedQuiz() {
+    const pool = QuizModel?.buildRetryPool
+        ? QuizModel.buildRetryPool(getQuestionBank(), state.progress.flaggedQuestionIds, 25)
+        : [];
+
+    if (!pool.length) {
+        showToast('No flagged questions available yet.', 'warning');
+        return;
+    }
+
+    launchQuizPool(pool, {
+        timeLimitSeconds: 0,
+        instantFeedback: true,
+        mode: 'flag-review',
+        examVariant: 'all',
+        reviewMode: 'explanation-first',
+        presetKey: 'custom'
+    });
+}
+
+function resumeQuizSession() {
+    const snapshot = state.progress.lastSession?.snapshot;
+    if (!snapshot) {
+        showToast('No quiz session to resume.', 'warning');
+        return;
+    }
+
+    const restored = QuizModel?.restoreQuizSnapshot
+        ? QuizModel.restoreQuizSnapshot(snapshot, getQuestionBank())
+        : null;
+
+    if (!restored || !restored.questions.length) {
+        clearLastSession('quiz');
+        showToast('The saved quiz session is no longer available.', 'warning');
+        return;
+    }
+
+    clearInterval(state.quiz.timerInterval);
+    state.quiz = {
+        ...restored,
+        timerInterval: null,
+        submitted: false
+    };
+
+    navigateTo('quiz');
+    document.getElementById('quizSetup').style.display = 'none';
+    document.getElementById('quizActive').style.display = 'block';
+    document.getElementById('quizResults').style.display = 'none';
+    document.getElementById('reviewSection').style.display = 'none';
+    document.getElementById('reviewSection').innerHTML = '';
+    document.getElementById('qTotal').textContent = state.quiz.questions.length;
+
+    renderQuestion();
+    renderNavigator();
+    if (state.quiz.timeLimit > 0) startTimer();
+    else document.getElementById('timerDisplay').textContent = 'No limit';
+
+    showToast('Resumed your last quiz session.', 'success');
 }
 
 // ===== QUIZ REVIEW MODE (WRONG ONLY) =====
 function reviewWrongOnly() {
-    const section = document.getElementById('reviewSection');
-    section.style.display = 'block';
-
-    const wrongQs = state.quiz.questions.filter(q => {
-        const answer = state.quiz.answers[q.id];
-        return answer !== undefined && answer !== q.answer;
-    });
-
-    if (wrongQs.length === 0) {
-        section.innerHTML = '<div class="card"><h3>🎉 Perfect Score!</h3><p>You got all questions correct!</p></div>';
-        section.scrollIntoView({ behavior: 'smooth' });
-        return;
-    }
-
-    const letters = ['A', 'B', 'C', 'D'];
-    let html = `<h3>❌ Wrong Answers (${wrongQs.length})</h3><p style="color:var(--text-secondary);margin-bottom:1rem;">Focus on understanding these before your next attempt.</p>`;
-
-    wrongQs.forEach((q, i) => {
-        const answer = state.quiz.answers[q.id];
-        html += `
-            <div class="review-item wrong">
-                <div class="review-meta">${TOPIC_META[q.topic]?.icon} ${TOPIC_META[q.topic]?.name} • Q${i + 1}</div>
-                <h4>${q.question}</h4>
-                <div style="margin: 0.5rem 0;">
-                    ${q.options.map((opt, j) => {
-                        let style = '';
-                        let marker = '';
-                        if (j === q.answer) { style = 'color: #065f46; font-weight: 700;'; marker = ' ✅'; }
-                        if (j === answer && j !== q.answer) { style = 'color: #991b1b; text-decoration: line-through;'; marker = ' ❌'; }
-                        return `<div style="${style}">${letters[j]}. ${opt}${marker}</div>`;
-                    }).join('')}
-                </div>
-                <div class="review-explanation">💡 ${q.explanation}</div>
-            </div>`;
-    });
-
-    section.innerHTML = html;
-    section.scrollIntoView({ behavior: 'smooth' });
+    renderReviewSection('wrong', state.quiz.reviewMode || 'explanation-first');
 }
 
 // ===== FORMULA QUICK-REFERENCE SHEET =====

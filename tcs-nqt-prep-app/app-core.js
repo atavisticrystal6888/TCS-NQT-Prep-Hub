@@ -18,7 +18,11 @@ function createDefaultProgress() {
         activities: [],
         flashcardProgress: {},
         notes: [],
-        bookmarks: []
+        bookmarks: [],
+        questionStats: {},
+        mistakeQuestionIds: [],
+        flaggedQuestionIds: [],
+        lastSession: null
     };
 }
 
@@ -114,6 +118,66 @@ function normalizeTopicStats(topicStats) {
     );
 }
 
+function uniqueNumberList(values) {
+    return Array.from(
+        new Set(
+            (Array.isArray(values) ? values : [])
+                .map((value) => Number(value))
+                .filter((value) => Number.isFinite(value))
+        )
+    );
+}
+
+function normalizeQuestionStats(questionStats) {
+    if (!questionStats || typeof questionStats !== 'object') return {};
+
+    return Object.fromEntries(
+        Object.entries(questionStats).map(([questionId, stats]) => [
+            questionId,
+            {
+                seen: Number(stats?.seen) || 0,
+                correct: Number(stats?.correct) || 0,
+                wrong: Number(stats?.wrong) || 0,
+                skipped: Number(stats?.skipped) || 0,
+                flagged: Number(stats?.flagged) || 0,
+                lowConfidence: Number(stats?.lowConfidence) || 0,
+                mediumConfidence: Number(stats?.mediumConfidence) || 0,
+                highConfidence: Number(stats?.highConfidence) || 0,
+                lastConfidence: typeof stats?.lastConfidence === 'string' ? stats.lastConfidence : 'unrated',
+                lastResult: typeof stats?.lastResult === 'string' ? stats.lastResult : 'unrated',
+                lastAttemptedAt: typeof stats?.lastAttemptedAt === 'string' ? stats.lastAttemptedAt : null
+            }
+        ])
+    );
+}
+
+function normalizeLastSession(session) {
+    if (!session || typeof session !== 'object') return null;
+    if (session.type !== 'quiz') return null;
+    if (!session.snapshot || typeof session.snapshot !== 'object') return null;
+
+    return {
+        type: 'quiz',
+        updatedAt: typeof session.updatedAt === 'string' ? session.updatedAt : new Date().toISOString(),
+        details: session.details && typeof session.details === 'object' ? session.details : {},
+        snapshot: {
+            questionIds: uniqueNumberList(session.snapshot.questionIds),
+            currentIndex: Number(session.snapshot.currentIndex) || 0,
+            answers: session.snapshot.answers && typeof session.snapshot.answers === 'object' ? session.snapshot.answers : {},
+            flaggedIds: uniqueNumberList(session.snapshot.flaggedIds),
+            confidence: session.snapshot.confidence && typeof session.snapshot.confidence === 'object' ? session.snapshot.confidence : {},
+            startTime: Number(session.snapshot.startTime) || Date.now(),
+            timeLimit: Number(session.snapshot.timeLimit) || 0,
+            timeRemaining: Number(session.snapshot.timeRemaining) || 0,
+            instantFeedback: session.snapshot.instantFeedback !== false,
+            mode: typeof session.snapshot.mode === 'string' ? session.snapshot.mode : 'standard',
+            examVariant: typeof session.snapshot.examVariant === 'string' ? session.snapshot.examVariant : 'all',
+            reviewMode: typeof session.snapshot.reviewMode === 'string' ? session.snapshot.reviewMode : 'standard',
+            presetKey: typeof session.snapshot.presetKey === 'string' ? session.snapshot.presetKey : 'custom'
+        }
+    };
+}
+
 function normalizeProgress(savedProgress) {
     const defaults = createDefaultProgress();
     const progress = savedProgress && typeof savedProgress === 'object' ? savedProgress : {};
@@ -137,7 +201,11 @@ function normalizeProgress(savedProgress) {
             ? progress.flashcardProgress
             : {},
         notes: Array.isArray(progress.notes) ? progress.notes : [],
-        bookmarks: Array.isArray(progress.bookmarks) ? progress.bookmarks : []
+        bookmarks: Array.isArray(progress.bookmarks) ? progress.bookmarks : [],
+        questionStats: normalizeQuestionStats(progress.questionStats),
+        mistakeQuestionIds: uniqueNumberList(progress.mistakeQuestionIds),
+        flaggedQuestionIds: uniqueNumberList(progress.flaggedQuestionIds),
+        lastSession: normalizeLastSession(progress.lastSession)
     };
 }
 
@@ -162,6 +230,57 @@ function saveProgress() {
             showToast('Storage is full. Export your progress or remove some notes.', 'warning');
         }
     }
+}
+
+function updateQuestionProgress(questionId, updates = {}) {
+    if (!state?.progress) return;
+    const key = String(questionId);
+    const current = state.progress.questionStats[key] || {
+        seen: 0,
+        correct: 0,
+        wrong: 0,
+        skipped: 0,
+        flagged: 0,
+        lowConfidence: 0,
+        mediumConfidence: 0,
+        highConfidence: 0,
+        lastConfidence: 'unrated',
+        lastResult: 'unrated',
+        lastAttemptedAt: null
+    };
+
+    state.progress.questionStats[key] = normalizeQuestionStats({
+        [key]: {
+            ...current,
+            ...updates
+        }
+    })[key];
+}
+
+function setQuestionList(fieldName, ids) {
+    if (!state?.progress) return;
+    state.progress[fieldName] = uniqueNumberList(ids);
+}
+
+function saveQuizSession(quiz, details = {}) {
+    if (!state?.progress || typeof QuizModel?.buildQuizSnapshot !== 'function') return;
+    const snapshot = QuizModel.buildQuizSnapshot(quiz);
+    if (!snapshot) return;
+
+    state.progress.lastSession = {
+        type: 'quiz',
+        updatedAt: new Date().toISOString(),
+        details,
+        snapshot
+    };
+    saveProgress();
+}
+
+function clearLastSession(type = 'quiz') {
+    if (!state?.progress?.lastSession) return;
+    if (type && state.progress.lastSession.type !== type) return;
+    state.progress.lastSession = null;
+    saveProgress();
 }
 
 function ensureToastContainer() {

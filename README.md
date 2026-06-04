@@ -4,10 +4,10 @@
 
 ### Your Complete TCS National Qualifier Test Preparation Kit
 
-**424+ Practice Questions · 10 Previous Papers · Interactive PWA · Interview Prep**
+**404 Curated Practice Questions · 10 Previous Papers · Interactive PWA · Interview Prep**
 
 [![GitHub Pages](https://img.shields.io/badge/Live%20App-GitHub%20Pages-blue?style=for-the-badge&logo=github)](https://arjunpolen.github.io/TCS-NQT-PYQ-QUESTIONS/)
-![Questions](https://img.shields.io/badge/Questions-424+-green?style=for-the-badge)
+![Questions](https://img.shields.io/badge/Questions-404-green?style=for-the-badge)
 ![Papers](https://img.shields.io/badge/Previous%20Papers-10-orange?style=for-the-badge)
 ![PWA](https://img.shields.io/badge/PWA-Offline%20Ready-purple?style=for-the-badge)
 
@@ -42,7 +42,9 @@ This repo contains:
 | Coding (Advanced) | 2 | 15 min | Implementation in C / Java / Python |
 | **Total** | **92** | **150 min** | |
 
-> ✅ No negative marking &nbsp;·&nbsp; ✅ Online proctored &nbsp;·&nbsp; ✅ Score valid for 2 years
+Use this as a prep-friendly full-mock blueprint; actual TCS iON NQT variants differ by the package you register for.
+
+> ✅ No negative marking &nbsp;·&nbsp; ✅ Authorised exam centres &nbsp;·&nbsp; ✅ Score valid for 2 years
 
 ---
 
@@ -67,11 +69,18 @@ TCS-NQT-PYQ-QUESTIONS/
 │       ├── ...
 │       └── paper-10.md
 │
+├── package.json                       # Validation and logic test scripts
+├── scripts/
+│   ├── validate-content.js            # Content QA checks for question/data integrity
+│   └── test-logic.js                  # Lightweight logic tests for pure helpers
+│
 └── tcs-nqt-prep-app/                  # Interactive PWA
     ├── index.html                      # App shell
     ├── app-core.js                     # Progress, countdown, streak, and toast helpers
     ├── app-bootstrap.js                # Startup wiring and delegated event handling
     ├── app.js                          # Main feature logic
+    ├── content-model.js                # Content hydration, metadata, freshness, and source links
+    ├── quiz-model.js                   # Pure quiz logic, adaptive pools, summaries, and snapshots
     ├── questions-data.js               # Quiz question bank
     ├── study-data.js                   # Study material data
     ├── styles.css                      # UI styles with dark mode
@@ -109,7 +118,7 @@ Essential DSA patterns that appear frequently in TCS NQT coding rounds, with imp
 
 ### HR & Interview Prep — [`materials/hr-questions.md`](materials/hr-questions.md)
 
-Sample answers for 12+ common HR questions: "Tell me about yourself", "Why TCS?", "Strengths & Weaknesses", relocation expectations, ILP details, and project discussions.
+Sample answers for 12+ common HR questions: "Tell me about yourself", "Why TCS?", "Strengths & Weaknesses", relocation expectations, onboarding/training questions, and project discussions.
 
 ### Previous Papers — [`materials/previous-papers/`](materials/previous-papers/)
 
@@ -130,22 +139,23 @@ The repo ships with a fully functional **Progressive Web App** you can install o
 | Feature | Description |
 |:--------|:------------|
 | **Dashboard** | Track questions attempted, accuracy, study time, tests completed, and weak areas at a glance |
-| **Take a Test** | Custom quiz builder — pick topics, question count (10/25/50/100), difficulty, and time limits. Quick-start presets for Quant, Reasoning, Verbal, Programming, and Full Mock |
+| **Take a Test** | Custom quiz builder with timed presets, adaptive recovery mode, question-mix filters, explanation-first review, resumable sessions, flagged questions, and confidence tracking |
 | **Study Materials** | 8 core topics with 45+ formulas and shortcuts: Quantitative Aptitude, Logical Reasoning, Verbal Ability, Programming Logic, DBMS & SQL, Operating Systems, Computer Networks, System Design |
 | **Interview Prep** | Structured prep for all 3 TCS rounds: Technical, Managerial, and HR |
 | **Flashcards** | Spaced repetition across 6 categories with difficulty ratings. Create your own custom cards |
 | **Notes** | Categorized note-taking (General, Quant, Verbal, Reasoning, Programming, Formulas, Mistakes) |
 | **Pomodoro Timer** | Built-in study timer with configurable work/break intervals (25/5/15 min) and streak tracking |
-| **Bookmarks** | Save important questions for quick review |
-| **Progress Analytics** | Performance trends, topic mastery levels, test history, export/import progress |
-| **Resources** | Curated YouTube playlists, practice links, recommended books, and a 7-day prep plan |
-| **Know TCS** | Company facts, salary breakdowns (Ninja/Digital/Prime), ILP details, and hiring process overview |
+| **Bookmarks** | Save important questions for quick review or launch a bookmarks-only practice session |
+| **Progress Analytics** | Performance trends, topic mastery, mistake-bank review queues, flagged-question queues, and export/import progress |
+| **Resources** | Curated YouTube playlists, practice links, recommended books, 7-day plan, content freshness panels, and official source links |
+| **Know TCS** | Company facts, current NQT opportunity notes, onboarding pointers, and hiring process overview |
 | **Dark Mode** | Eye-friendly dark theme for late-night study sessions |
 
 ### Tech Stack
 
 - **Vanilla JavaScript (ES6+)** — zero dependencies, fast load
 - **HTML5 + CSS3** — responsive design, glass-morphism UI
+- **Content model + quiz model helpers** — separate data freshness, adaptive pool, retry pool, and quiz snapshot logic from UI rendering
 - **Service Worker** — full offline support
 - **localStorage** — persistent progress without a backend
 - **PWA Manifest** — installable on any device
@@ -164,9 +174,24 @@ Visit the [live GitHub Pages site](https://arjunpolen.github.io/TCS-NQT-PYQ-QUES
 # Clone the repo
 git clone https://github.com/Arjunpolen/TCS-NQT-PYQ-QUESTIONS.git
 
-# Open in browser
-# Simply open index.html — no build tools or servers needed
+# Run a local preview (recommended for full PWA behavior)
+cd TCS-NQT-PYQ-QUESTIONS/tcs-nqt-prep-app
+py -m http.server 8123
+
+# Then open http://127.0.0.1:8123/index.html
 ```
+
+### Validation Scripts
+
+```bash
+# From the repo root
+npm run validate:content
+npm run test:logic
+```
+
+`validate:content` checks duplicate IDs, invalid answer indexes, missing explanations, missing hydrated metadata, and suspicious explanation/answer mismatches.
+
+`test:logic` covers the pure helper layer in `quiz-model.js` and the normalization/session helpers in `app-core.js`.
 
 ### Study from Markdown Files
 
@@ -205,6 +230,34 @@ All questions and study materials are in plain Markdown — read them directly o
 - **GeeksforGeeks** — Programming & DSA reference
 - **PrepInsta** — TCS NQT specific practice
 - **Striver's SDE Sheet** — Coding round preparation
+
+---
+
+## 🛣️ Phased Roadmap
+
+### Phase 1 — Completed foundation pass
+
+- Split the app into UI, content, and quiz helper layers (`app-core.js`, `app-bootstrap.js`, `content-model.js`, `quiz-model.js`)
+- Added adaptive quiz selection, timed presets, resumable sessions, flagged questions, confidence tracking, mistake-bank review, and explanation-first review
+- Added trust signals such as content versioning, reviewed dates, confidence labels, official source links, and a changelog
+- Added content validation and logic test scripts for lightweight engineering guardrails
+
+### Phase 2 — Next frontend/content pass
+
+- Expand the content audit based on `validate:content` warnings and add more answer-explanation consistency checks
+- Add richer analytics views for low-confidence answers, flagged questions, and topic recovery over time
+- Improve search, bookmarks, and study surfaces with more cross-links between questions, study topics, and flashcards
+
+### Phase 3 — Product hardening
+
+- Add a proper release checklist for content freshness, PWA smoke checks, and offline cache validation
+- Introduce structured content authoring conventions so new questions and notes stay consistent
+- Add more targeted test coverage for schedule generation, analytics summaries, and review queue behavior
+
+### Phase 4 — Deferred architectural review
+
+- Backend sync, multi-device accounts, and collaboration features are intentionally deferred for a later review
+- A TypeScript migration is also deferred until the current browser-side architecture and content model settle
 
 ---
 

@@ -1,0 +1,8 @@
+{
+  "name": "tcs-nqt-prep-questions",
+  "private": true,
+  "scripts": {
+    "validate:content": "node scripts/validate-content.js",
+    "test:logic": "node scripts/test-logic.js"
+  }
+}
